@@ -83,7 +83,13 @@ _PUNCT = {",": "，", ":": "：", ";": "；", "?": "？", "!": "！"}   # 括號
 _IDEO = r"[\u3400-\u9fff]"
 _DASH_CJK = re.compile(r"\s*(——|—|--)\s*")
 _DASH_EN = re.compile(r"\s+[—–]\s+")
-_FILLER_RE = re.compile("(?:%s)[，,、]?" % "|".join(re.escape(x) for x in sorted(FILLERS, key=len, reverse=True)))
+# 只刪「句首／逗號後」且「後面接逗號」的套話（否則會留下殘句，例如「總的來說是好的」）；引號內不動
+_FILLER_RE = re.compile("(?<![^。！？；：，,\\n])(?:%s)[，,]" % "|".join(re.escape(x) for x in sorted(FILLERS, key=len, reverse=True)))
+_Q_OPEN, _Q_CLOSE = "「『“", "」』”"
+
+
+def _in_quote(s: str, pos: int) -> bool:
+    return sum(s.count(c, 0, pos) for c in _Q_OPEN) > sum(s.count(c, 0, pos) for c in _Q_CLOSE)
 _LEX_RE = re.compile("|".join(re.escape(k) for k in sorted(LEXICON, key=len, reverse=True)), re.I)
 _LEX_LOWER = {k.lower(): v for k, v in LEXICON.items()}
 _REGION_RE = re.compile("|".join(re.escape(k) for k in sorted(REGION, key=len, reverse=True)))
@@ -157,7 +163,7 @@ def _phrase_rules(ctx: Ctx) -> List[Tuple[re.Pattern, Callable[[re.Match], str]]
     if ctx.on("artefact"):
         rules.append((_ART_RE, logged("artefact", lambda m: "")))
     if ctx.on("filler"):
-        rules.append((_FILLER_RE, logged("filler", lambda m: "")))
+        rules.append((_FILLER_RE, logged("filler", lambda m: m.group(0) if _in_quote(m.string, m.start()) else "")))
     if ctx.on("lexicon"):
         rules.append((_LEX_RE, logged("lexicon", lambda m: ctx.pick("lex:" + m.group(0).lower(), _LEX_LOWER[m.group(0).lower()]))))
     if ctx.on("region") and ctx.traditional:
@@ -261,7 +267,8 @@ def scan_text(s: str) -> List[Tuple[str, str]]:
     for m in _LEX_RE.finditer(s):
         hits.append(("lexicon", m.group(0)))
     for m in _FILLER_RE.finditer(s):
-        hits.append(("filler", m.group(0)))
+        if not _in_quote(s, m.start()):
+            hits.append(("filler", m.group(0)))
     if _ART_RE.search(s):
         hits.append(("artefact", "殘留標記"))
     if _REGION_RE.search(s) and is_traditional(s):

@@ -33,7 +33,7 @@ def test_clean_text_unchanged():
 
 def test_rebuild_style_is_optional(dirty_docx, tmp_path):
     d = Document(dirty_docx)
-    d.add_paragraph("綜上所述——**重點**")
+    d.add_paragraph("綜上所述，**重點**——補充")
     src = str(tmp_path / "s.docx")
     d.save(src)
     off, on = str(tmp_path / "off.docx"), str(tmp_path / "on.docx")
@@ -56,10 +56,10 @@ def test_cross_run_phrase_replacement():
     from lxml import etree
     from wmr.style import Ctx, restyle_paragraph, W
     xml = ('<w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-           '<w:r><w:t>前文綜上</w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>所述，結論</w:t></w:r></w:p>')
+           '<w:r><w:t>前文。綜上</w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>所述，結論</w:t></w:r></w:p>')
     p = etree.fromstring(xml)
     restyle_paragraph(p, Ctx())
-    assert "".join(t.text for t in p.iter(W + "t")) == "前文結論"
+    assert "".join(t.text for t in p.iter(W + "t")) == "前文。結論"
     assert len(list(p.iter(W + "r"))) == 2 and p.find(".//" + W + "b") is not None  # 格式保留
 
 
@@ -128,3 +128,10 @@ def test_region_rule_does_not_break_taiwan_usage():
 def test_lexicon_replacement_keeps_part_of_speech():
     assert restyle_text("補助是推動轉型的助力") == "補助是推動轉型的幫助"     # 名詞 → 名詞/動詞皆可，不可變成「…的協助」
     assert restyle_text("科技助力產業升級") == "科技幫助產業升級"
+
+
+def test_filler_only_deleted_in_safe_positions():
+    assert restyle_text("總的來說是好的。") == "總的來說是好的。"      # 無逗號：刪了會成殘句
+    assert restyle_text("他說「總而言之，不行」。") == "他說「總而言之，不行」。"   # 引號內不動
+    assert restyle_text("這是眾所周知的事。") == "這是眾所周知的事。"
+    assert restyle_text("研究顯示成效顯著。綜上所述，該方案可行。") == "研究顯示成效顯著。該方案可行。"
