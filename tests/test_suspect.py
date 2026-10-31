@@ -129,3 +129,41 @@ def test_standalone_dash_placeholder_is_not_flagged(tmp_path):
     r = analyze(_doc(tmp_path, [("p", "—"), ("p", "結果很好——而且穩定。")]))
     flagged = [f.para for f in r.flags if f.cat == "dash"]
     assert flagged == [2]
+
+
+def test_heading_structure_always_three(tmp_path):
+    items = []
+    for i in range(5):
+        items.append(("h1", "第%d節" % (i + 1)))
+        for j in range(3):
+            items.append(("h2", "小節%d-%d" % (i, j)))
+            items.append(("p", "內容在此，說明這個小節的要點。"))
+    r = analyze(_doc(tmp_path, items))
+    assert "heading_rule3" in cats(r)
+
+
+def test_heading_structure_varied_not_flagged(tmp_path):
+    items = []
+    for i, n in enumerate([2, 3, 4, 1, 5]):
+        items.append(("h1", "第%d節" % (i + 1)))
+        for j in range(n):
+            items.append(("h2", "小節%d-%d" % (i, j)))
+            items.append(("p", "內容在此。"))
+    assert "heading_rule3" not in cats(analyze(_doc(tmp_path, items)))
+
+
+def test_restate_and_opener_phrases(tmp_path):
+    r = analyze(_doc(tmp_path, [("p", "這個問題很複雜。換言之，沒有簡單的答案。這也是為什麼我們需要更多討論。隨著科技的快速發展，情況改變。")]))
+    assert {"restate", "opener"} <= cats(r)
+
+
+def test_first_second_third_with_zaici(tmp_path):
+    r = analyze(_doc(tmp_path, [("p", "首先，政府應該增加預算。其次，企業應該投入資源。再次，社區應該參與。")]))
+    assert "triad" in cats(r)
+
+
+def test_triple_list_density(tmp_path):
+    r = analyze(_doc(tmp_path, [("p", "我們需要資金、人力與技術。同時要整合醫療、照護及預防。還要兼顧效率、公平與品質。")]))
+    assert "triple_list" in cats(r)
+    r2 = analyze(_doc(tmp_path, [("p", "我們需要資金、人力與技術。今天的天氣不錯，所以出門散步。")]))
+    assert "triple_list" not in cats(r2)

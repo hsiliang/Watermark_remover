@@ -51,6 +51,10 @@ CATEGORIES: Dict[str, tuple] = {
     "bold_label":    ("粗體標籤開頭", "中", False, "green",     "『**重點**：說明』是聊天機器人清單的樣式；改成一般句子或取消粗體。"),
     "bold_heavy":    ("粗體過多", "低", False, "green",     "整段幾乎都是粗體；只保留真正需要強調的詞。"),
     "heading_pair":  ("標題公式（A與B）", "低", False, "green",     "『挑戰與展望』之類的公式化標題，可改成更具體的標題。"),
+    "heading_rule3": ("章節結構總是三個小節", "低", False, "green",     "多數大節都剛好三個小節（三段式結構）。依內容需要增減或合併小節，讓結構不那麼整齊。"),
+    "restate":       ("重述／銜接句（換言之、這意味著…）", "低", False, "cyan",      "『換言之／這也是為什麼／更重要的是』常用來重複前一句。刪掉常不影響句意。"),
+    "opener":        ("套式開頭（隨著…的發展／在當今…）", "低", False, "cyan",      "『隨著X的快速發展』是很常見的 AI 開場。直接從具體事實或問題開始。"),
+    "triple_list":   ("三項並列密集", "低", False, "cyan",      "同一段多句都是『A、B與C』三項並列。保留真正三項的，其餘改成兩項或四項、或改寫句型。"),
     "quote_mixed":   ("引號樣式混用", "低", False, "green",     "全文引號慣例不一致（「」與“”混用），請統一。"),
 }
 
@@ -65,7 +69,10 @@ _NEG_RE = re.compile(r"不(?:僅|只(?!一[個項種位])|單|但)[^。！？\n]
                      r"|\bnot (?:just|only|merely)\b[^.\n]{1,60}?\bbut\b", re.I)
 _VAGUE_RE = re.compile(r"(?<!本)(?:相關|大量|許多|已有|現有|眾多|多項|多數)?(?<!本)(?:研究|文獻|實證|調查|學者|實踐)(?:均|皆|都|已)?(?:表明|顯示|指出|證明|發現|認為|表示|證實)")
 _CITE_RE = re.compile(r"(?:19|20)\d{2}|\[\d+(?:[,，\-–]\d+)*\]")
-_TRIAD_RE = re.compile(r"首先[^。]{0,120}其次[^。]{0,120}(?:最後|再者|此外|另外|最終)|第一[^。]{0,100}第二[^。]{0,100}第三")
+_TRIAD_RE = re.compile(r"首先[^\n]{0,160}?其次[^\n]{0,160}?(?:最後|再者|再次|此外|另外|最終|第三)|第一[^\n]{0,140}?第二[^\n]{0,140}?第三")
+_RESTATE_RE = re.compile(r"換言之|換句話說|也就是說|這意味著|這也說明|這也就是為什麼|這也是為什麼|更重要的是|不可否認|不難看出|由此可見")
+_OPENER_RE = re.compile(r"(?:^|[。！？\n])\s*(?:隨著[^，。]{1,18}的(?:發展|推進|普及|加速|快速|興起|進步|成熟|提升|增加)|在當今[^，。]{0,10}|在這樣的背景下|在此背景下|在.{1,10}的浪潮下)")
+_TRIPLE_RE = re.compile(r"[^，。；、]{1,12}、[^，。；、]{1,12}(?:與|及|和|以及)[^，。；、]{1,12}")
 _TAIL_RE = re.compile(r"^(?:綜上所述|總之|總而言之|整體而言|整體來看|由此可見|簡言之|總的來說|簡單說|in summary|in conclusion|overall)", re.I)
 _EG_RE = re.compile(r"[（(]如[^）)]+[）)]")
 _NOM_RE = re.compile(r"(?:進行|予以|加以|開展|展開)(?:了|著)?[一-鿿]{1,4}")
@@ -334,6 +341,14 @@ def analyze(path: str, skip_headings=("參考文獻", "參考資料", "Reference
         if len(_NOM_RE.findall(t)) >= 3:
             m = _NOM_RE.search(t)
             add("nominal", p, m.start(), m.end(), note="本段 %d 處。" % len(_NOM_RE.findall(t)))
+        for m in _RESTATE_RE.finditer(t):
+            add("restate", p, m.start(), m.end())
+        for m in _OPENER_RE.finditer(t):
+            a0 = m.start() + (len(m.group(0)) - len(m.group(0).lstrip("。！？\n ")))
+            add("opener", p, a0, m.end())
+        trip = [m for m in _TRIPLE_RE.finditer(t)]
+        if len(trip) >= 3:
+            add("triple_list", p, trip[0].start(), trip[0].end(), note="本段 %d 處三項並列。" % len(trip))
         if p.first_bold and re.match(r"^.{1,20}?[：:]", t) and len(t) > 12:
             m = re.match(r"^.{1,20}?[：:]", t)
             add("bold_label", p, 0, m.end())
@@ -347,6 +362,26 @@ def analyze(path: str, skip_headings=("參考文獻", "參考資料", "Reference
         prev_open.append(op)
         if len(prev_open) >= 3 and len(t) >= 60 and op and prev_open[-1] == prev_open[-2] == prev_open[-3]:
             add("para_open", p, 0, len(op), note="連續第 3 段以「%s」開頭。" % op)
+
+    # ---- 章節結構：多數大節剛好三個小節（逐層檢查，標題層級不一定從 1 開始）----
+    heads = [(p, _level(p.style, p.element)) for p in paras if p.is_heading]
+    by_idx0 = {p.idx: p for p in paras}
+    for L in sorted({lv for _, lv in heads if lv}):
+        groups: List[tuple] = []
+        for p, lv in heads:
+            if lv == L:
+                groups.append((p, []))
+            elif lv == L + 1 and groups:
+                groups[-1][1].append(p)
+            elif lv and lv <= L and lv != L and groups:
+                pass
+        with_kids = [(p, k) for p, k in groups if k]
+        if len(with_kids) >= 4:
+            three = [p for p, k in with_kids if len(k) == 3]
+            if len(three) / len(with_kids) >= 0.6:
+                for hp in three:
+                    add("heading_rule3", hp, 0, len(hp.text.rstrip()),
+                        note="第 %d 級標題：%d／%d 個都剛好 3 個子標題。" % (L, len(three), len(with_kids)))
 
     # ---- 指標 ----
     chars = sum(len(p.text) for p in body) or 1
