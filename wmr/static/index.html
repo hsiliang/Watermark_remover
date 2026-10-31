@@ -1,177 +1,870 @@
 <!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Watermark Remover</title>
+<title>Watermark Remover · 文件醫院</title><link rel="icon" href="data:,">
 <style>
-:root{--bg:#eceae3;--fg:#24231f;--mut:#6f6c63;--card:#fbfaf6;--bd:#cfcbbf;--acc:#2f5d8a;--acc2:#e8eef5;--hi:#b3261e;--md:#a86400;--lo:#6a6a6a;--ok:#1b7a3d;--wall:#b9c2b2;--wood:#6b4a2f;--wood2:#573b25;--glass:#dfe8ea;--paper:#fff}
-@media(prefers-color-scheme:dark){:root{--bg:#171715;--fg:#e8e6df;--mut:#9a9890;--card:#222220;--bd:#3a3a36;--acc:#7fb0e0;--acc2:#26323f;--hi:#ff8a80;--md:#ffc266;--lo:#aaa;--ok:#6fd08c;--wall:#4a5347;--wood:#7a5736;--wood2:#5f442b;--glass:#34403f;--paper:#f4f2ea}}
-*{box-sizing:border-box}[hidden]{display:none!important}html,body{height:100%}
-body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 -apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;display:flex;flex-direction:column;overflow:hidden}
-header{display:flex;align-items:baseline;gap:14px;padding:12px 24px 4px}
-h1{font-size:18px;margin:0;letter-spacing:.5px}.mut{color:var(--mut);font-size:12px}
-#line{display:flex;flex:1;min-height:0;align-items:stretch;gap:0;padding:8px 20px 6px}
-.st{flex:1 1 0;min-width:0;background:var(--card);border:2px solid var(--bd);border-radius:12px;padding:12px 12px 10px;display:flex;flex-direction:column;opacity:.5;transition:opacity .3s,border-color .3s,box-shadow .3s}
-.st.big{flex:1.35 1 0}
-.st[data-s=active]{opacity:1;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc2)}
-.st[data-s=done]{opacity:1}
-.st h2{font-size:15px;margin:0;display:flex;align-items:center;gap:8px}
-.no{background:var(--acc);color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;flex:none}
-.st[data-s=done] .no{background:var(--ok)}
-.intro{font-size:12px;color:var(--mut);margin:4px 0 8px;min-height:36px}
-.body{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;position:relative}
-.pipe{flex:0 0 26px;display:flex;align-items:center;justify-content:center}
-.pipe i{display:block;width:100%;height:6px;border-radius:3px;background:var(--bd);position:relative;overflow:hidden}
-.pipe.on i{background:repeating-linear-gradient(90deg,var(--acc) 0 8px,transparent 8px 14px);background-size:14px 6px;animation:flow .6s linear infinite}
-@keyframes flow{to{background-position:14px 0}}
-button,.btn{background:var(--acc);color:#fff;border:0;border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;text-decoration:none;display:inline-block;font-family:inherit}
-button.ghost,.btn.ghost{background:transparent;color:var(--acc);border:1px solid var(--acc)}
-button:disabled{opacity:.45;cursor:not-allowed}
-/* 1 服務台 */
-#desk{position:relative;width:100%;max-width:250px;aspect-ratio:6/5.2;cursor:pointer}
-#desk svg{width:100%;height:100%;display:block}
-#hole{transition:transform .2s}
-#desk.over #hole,#desk:hover #hole{transform:scale(1.35);transform-origin:120px 138px}
-#glow{opacity:.0;transition:opacity .2s}#desk.over #glow,#desk:hover #glow{opacity:1}
-#flyer{position:absolute;left:50%;top:66%;width:34px;height:42px;background:var(--paper);border:1px solid #999;border-radius:2px;box-shadow:0 1px 3px #0004;transform:translate(-50%,-300%);opacity:0;pointer-events:none;font-size:8px;color:#444;padding:4px 3px;overflow:hidden}
-#flyer.go{animation:post 1s ease-in forwards}
-@keyframes post{0%{opacity:1;transform:translate(-50%,-260%) rotate(-8deg) scale(1.3)}60%{opacity:1;transform:translate(-50%,-50%) rotate(0) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.1)}}
-#stamp{position:absolute;right:6%;top:6%;border:3px solid var(--ok);color:var(--ok);padding:0 8px;border-radius:4px;font-weight:700;transform:rotate(-12deg) scale(2);opacity:0;transition:all .25s}
-#stamp.show{opacity:.9;transform:rotate(-12deg) scale(1)}
-/* 2 檢測 */
-.sev{display:flex;gap:8px;justify-content:center}.sev div{border:1px solid var(--bd);border-radius:8px;padding:4px 10px;min-width:54px}
-.sev b{display:block;font-size:20px;line-height:1.2}.hi{color:var(--hi)}.md{color:var(--md)}.lo{color:var(--lo)}.ok{color:var(--ok)}
-.tops{font-size:12px;text-align:left;width:100%;margin:0;padding:0;list-style:none}.tops li{display:flex;justify-content:space-between;gap:6px;border-bottom:1px dotted var(--bd);padding:1px 0}
-.row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
-/* 3 設定 */
-.form{text-align:left;width:100%;font-size:13px}.form label{display:block;margin:4px 0}.form input[type=text]{width:100%;padding:5px 7px;border:1px solid var(--bd);border-radius:5px;background:var(--bg);color:var(--fg);font:inherit;font-size:12px}
-.form small{color:var(--mut);display:block;font-size:11px;line-height:1.3;margin-left:20px}
-/* 4 清理 */
-.chk{list-style:none;margin:0;padding:0;text-align:left;font-size:12.5px;width:100%}.chk li{padding:3px 0;display:flex;gap:8px;align-items:flex-start;color:var(--mut)}
-.chk li b{flex:none;width:16px;text-align:center}.chk li.run{color:var(--fg)}.chk li.run b{animation:blink .8s infinite}.chk li.ok2{color:var(--fg)}.chk li.ok2 b{color:var(--ok)}.chk li.bad b{color:var(--hi)}
-@keyframes blink{50%{opacity:.2}}
-/* 5 印表機 */
-#printer{position:relative;width:100%;max-width:230px;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center}
-#printer svg{width:100%;flex:none;display:block}
-#slotwin{width:56%;flex:1;min-height:0;overflow:hidden;position:relative;margin-top:-2px}
-#paper{position:absolute;left:0;right:0;top:0;height:100%;background:var(--paper);border:1px solid #aaa;border-top:0;color:#333;padding:8px 6px;font-size:11px;transform:translateY(-100%);box-shadow:0 2px 5px #0003;display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:flex-start}
-#paper.out{animation:out 2.4s steps(14) forwards}
-@keyframes out{to{transform:translateY(0)}}
-#paper b{font-size:10px}#paper .ln{height:3px;background:#bbb;width:100%;border-radius:2px}
-#printer.busy svg{animation:shake .12s infinite}
-@keyframes shake{50%{transform:translateX(1px)}}
-#fine{padding:2px 24px 10px;display:flex;justify-content:space-between;gap:12px;min-height:30px;align-items:center}
-#msg{color:var(--hi);font-size:12.5px}
-dialog{border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--fg);width:min(860px,92vw);max-height:84vh;padding:0}
-dialog::backdrop{background:#0006}.dh{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--bd)}
-.dbody{padding:12px 16px;overflow:auto;max-height:calc(84vh - 56px)}
-table{border-collapse:collapse;width:100%;font-size:12.5px}td,th{border-bottom:1px solid var(--bd);padding:3px 8px;text-align:left;vertical-align:top}
-.high{color:var(--hi)}.medium{color:var(--md)}.low{color:var(--lo)}
-@media (max-width:1000px),(max-height:560px){body{overflow:auto}#line{flex-wrap:wrap}.st{flex:1 1 280px;min-height:300px}.pipe{display:none}}
+:root{--ol:#2b2d42;--ink:#1f2333;--paper:#fffdf6;--hi:#d62828;--md:#d97706;--lo:#2a9d8f;--ok:#1f9d55;--k:1}
+*{box-sizing:border-box}[hidden]{display:none!important}
+html,body{margin:0;height:100%;overflow:hidden;background:#101218}
+body{font:19px/1.5 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;color:var(--ink)}
+#stage{position:fixed;left:50%;top:50%;width:1600px;height:900px;transform:translate(-50%,-50%) scale(var(--k));overflow:clip;background:#d6efe4;user-select:none;-webkit-user-select:none}
+.layer{position:absolute;left:0;top:0;height:900px;will-change:transform;transition:transform 1.4s cubic-bezier(.65,0,.35,1)}
+#far{width:5200px}#strip{width:11200px}#near{width:14000px;pointer-events:none}
+.scene{position:absolute;top:0;width:1600px;height:900px}
+.scene>svg.bg{position:absolute;left:0;top:0;width:1600px;height:900px;pointer-events:none}
+svg{overflow:visible}svg *{stroke-linejoin:round;stroke-linecap:round}
+.abs{position:absolute}
+/* ---- HUD ---- */
+#hud{position:absolute;left:0;top:0;width:1600px;height:66px;background:rgba(43,45,66,.92);color:#fff;display:flex;align-items:center;padding:0 22px;gap:18px;z-index:5}
+#hud .brand{font-weight:900;font-size:20px;letter-spacing:.5px;white-space:nowrap}
+#hud .brand small{display:block;font-weight:600;font-size:13px;color:#b8c0d8;letter-spacing:0}
+#steps{display:flex;gap:6px;margin:0 0 0 auto;padding:0;list-style:none}
+#steps li{display:flex;align-items:center;gap:7px;padding:6px 13px 6px 9px;border-radius:999px;background:rgba(255,255,255,.08);color:#9aa3bf;font-weight:700;font-size:17px;white-space:nowrap;cursor:default;position:relative}
+#steps li svg{width:24px;height:24px;flex:none}
+#steps li.on{background:#ffd23f;color:var(--ink)}
+#steps li.done{color:#d6f5e3;background:rgba(31,157,85,.35)}
+#steps li .ck{display:none;position:absolute;right:-3px;top:-4px;width:18px;height:18px;border-radius:50%;background:#1f9d55;color:#fff;font-size:12px;line-height:18px;text-align:center;border:2px solid #fff}
+#steps li.done .ck{display:block}
+/* ---- 廣播條 ---- */
+#cast{position:absolute;left:260px;top:76px;width:1080px;min-height:50px;background:#c1121f;color:#fff;border:4px solid #6a040f;border-radius:12px;display:flex;align-items:center;gap:14px;padding:8px 14px;z-index:6;box-shadow:0 6px 0 rgba(0,0,0,.25);font-weight:700}
+#cast b{background:#fff;color:#c1121f;border-radius:6px;padding:0 8px;white-space:nowrap}
+#cast span{flex:1;word-break:break-all}
+#cast button{background:transparent;border:2px solid #fff;color:#fff;border-radius:8px;font:inherit;font-size:16px;cursor:pointer;padding:2px 10px}
+#fine{position:absolute;left:0;bottom:0;width:1600px;height:34px;background:rgba(43,45,66,.88);color:#e8ebf5;font-size:16px;display:flex;align-items:center;justify-content:center;z-index:5}
+/* ---- 共用元件 ---- */
+.card{position:absolute;background:var(--paper);border:4px solid var(--ol);border-radius:20px;box-shadow:8px 8px 0 rgba(43,45,66,.18);padding:20px 26px;color:var(--ink)}
+.card h2{margin:0 0 8px;font-size:30px;line-height:1.25;font-weight:900}
+.tag{display:inline-block;font-size:15px;padding:1px 10px;border:3px solid var(--ol);border-radius:999px;background:#fff3c4;font-weight:800;vertical-align:middle;margin-right:6px}
+.card p{margin:6px 0}
+.mut{color:#5c6378;font-size:16px}
+.btn{font:inherit;font-weight:800;font-size:20px;line-height:1.2;padding:11px 20px;border:4px solid var(--ol);border-radius:14px;background:#ffd23f;color:var(--ink);cursor:pointer;box-shadow:0 5px 0 var(--ol);text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:transform .08s,box-shadow .08s;white-space:nowrap}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ol)}
+.btn.alt{background:#fff}.btn.go{background:#2ec4b6}
+.btn:disabled{background:#ddd;color:#888;cursor:not-allowed;box-shadow:0 5px 0 #999;border-color:#999;transform:none}
+.btn:focus-visible,.lnk:focus-visible,.hit:focus-visible{outline:4px solid #3a86ff;outline-offset:3px}
+.lnk{background:none;border:0;font:inherit;font-size:17px;color:#1d4e89;text-decoration:underline;cursor:pointer;padding:2px 0}
+.row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.bubble{position:absolute;background:#fff;border:4px solid var(--ol);border-radius:18px;padding:6px 14px;font-weight:800;font-size:20px;white-space:nowrap;box-shadow:4px 4px 0 rgba(43,45,66,.15)}
+.bubble::after{content:"";position:absolute;bottom:-14px;left:var(--tx,30px);width:18px;height:18px;background:#fff;border-right:4px solid var(--ol);border-bottom:4px solid var(--ol);transform:rotate(45deg)}
+.stamp{position:absolute;border:5px solid #d62828;color:#d62828;font-weight:900;font-size:26px;padding:0 10px;border-radius:10px;transform:rotate(-14deg);opacity:0;pointer-events:none;letter-spacing:2px;background:rgba(255,255,255,.4)}
+.stamp.show{animation:stampin .35s ease-out forwards}
+@keyframes stampin{0%{opacity:0;transform:rotate(-14deg) scale(2.4)}100%{opacity:.92;transform:rotate(-14deg) scale(1)}}
+.hit{position:absolute;background:transparent;border:0;cursor:pointer;border-radius:12px}
+.hit:disabled{cursor:default}
+.hi{color:var(--hi)}.md{color:var(--md)}.lo{color:var(--lo)}.ok{color:var(--ok)}
+.warn{border:4px solid #d62828;background:#fff0f0;border-radius:14px;padding:10px 14px;color:#9d0208;font-weight:800}
+.warn big{display:block;font-size:24px;color:#d62828}
+/* 治療後延續造型：中風險＝繃帶腿＋拐杖，高風險＝頭上繃帶 */
+.leg-stump,.hd-band{display:none}.rk-medium .leg-stump,.rk-high .hd-band{display:inline}.rk-medium .leg-ok{display:none}
+/* ---- S1 掛號 ---- */
+#win1 .glow,#win6 .glow{opacity:0;transition:opacity .2s}
+#win1.near .glow,#win6.near .glow{opacity:1}
+#win1 .open,#win6 .open{transition:transform .25s;transform-box:fill-box;transform-origin:center}
+#win1.open .open,#win6.open .open{transform:scale(1.35)}
+#doc1,#doc6{transition:transform .4s,opacity .4s;transform-box:fill-box;transform-origin:center}
+#doc1.gone,#doc6.gone{transform:scale(.1);opacity:0}
+#lamp{position:absolute;left:610px;top:114px;width:210px;height:76px;color:#ff4d4d;font-family:Menlo,Consolas,monospace;text-align:center;line-height:1.1}
+#lamp b{display:block;font-size:34px;letter-spacing:4px;text-shadow:0 0 8px #ff4d4d}
+#lamp span{font-size:16px;color:#ffd166;font-family:inherit;font-weight:700}
+#lamp.busy b{animation:blink .7s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+.slip{position:absolute;background:#fff;border:3px solid var(--ol);border-radius:6px;box-shadow:5px 5px 0 rgba(43,45,66,.15);padding:14px 18px;font-size:18px;transform:rotate(-1.5deg)}
+.slip h3{margin:0 0 6px;font-size:22px;border-bottom:3px double var(--ol);display:flex;justify-content:space-between}
+.slip dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:2px 10px}.slip dt{color:#5c6378}.slip dd{margin:0;font-weight:700;word-break:break-all}
+.reject{position:absolute;background:#d62828;color:#fff;border:4px solid #6a040f;border-radius:10px;padding:8px 14px;font-weight:900;text-align:center;transform-origin:50% -20px;animation:swing 1.2s ease-out}
+.reject small{display:block;font-weight:600;font-size:15px;word-break:break-all}
+@keyframes swing{0%{transform:rotate(-25deg) translateY(-30px);opacity:0}30%{transform:rotate(14deg);opacity:1}60%{transform:rotate(-7deg)}100%{transform:none}}
+/* ---- S2 CT ---- */
+#bedpt{transition:transform 1.2s ease-in-out}
+#sc2[data-st=in] #bedpt,#sc2[data-st=scan] #bedpt{transform:translateX(230px)}
+#sc2[data-st=react] #ctpt{opacity:0}
+#scanbar{opacity:0}
+#sc2[data-st=scan] #scanbar{opacity:1;animation:sweep .9s ease-in-out infinite alternate}
+@keyframes sweep{from{transform:translateX(-100px)}to{transform:translateX(100px)}}
+#sc2[data-st=scan] .spin{animation:spin 1.1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#ctlamp{fill:#7a1f1f}#sc2[data-st=scan] #ctlamp,#sc2[data-st=in] #ctlamp{fill:#ff3b3b;animation:blink .6s steps(2) infinite}
+.monitor{position:absolute;background:#16213e;border:8px solid #50577a;border-radius:18px;color:#c7f9cc;padding:18px 22px;font-size:19px;box-shadow:0 0 0 4px var(--ol),8px 8px 0 4px rgba(43,45,66,.2)}
+.monitor h3{margin:0 0 4px;font-size:24px;color:#fff}
+.monitor .disc{display:inline-block;background:#ffd23f;color:var(--ink);font-weight:900;border-radius:8px;padding:1px 10px;font-size:17px;margin-bottom:8px}
+.monitor .ln{opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s;margin:6px 0;border-bottom:1px dashed #3a4a6b;padding-bottom:6px}
+.monitor .ln.show{opacity:1;transform:none}
+.monitor .ln b{color:#fff}
+.monitor .sev3{display:flex;gap:10px;margin-top:4px}
+.monitor .sev3 span{flex:1;text-align:center;border-radius:8px;padding:2px 0;font-weight:800;color:#16213e}
+.monitor ol{margin:2px 0 0;padding-left:24px}.monitor li{word-break:break-all}
+.lvl{font-size:30px;font-weight:900}
+.lvl.high{color:#ff6b6b}.lvl.medium{color:#ffbe3d}.lvl.low{color:#6ee7b7}
+.cap{position:absolute;background:#fff;border:4px solid var(--ol);border-radius:16px;padding:12px 18px;font-size:20px;font-weight:800;box-shadow:6px 6px 0 rgba(43,45,66,.15)}
+.cap small{display:block;font-weight:600;font-size:16px;color:#5c6378}
+.stars{animation:spin 1.2s linear infinite}
+.runin{animation:runin .9s ease-out both}
+@keyframes runin{from{transform:translateX(-520px)}to{transform:none}}
+.bob{animation:bob .25s ease-in-out 4 alternate}
+@keyframes bob{to{transform:translateY(-8px)}}
+.rollin{animation:rollin 1.5s ease-out both}
+@keyframes rollin{from{transform:translateX(-640px)}to{transform:none}}
+.puff{animation:puff 2.2s ease-out infinite}
+@keyframes puff{0%{opacity:0;transform:translateY(24px) scale(.6)}20%,80%{opacity:1}100%{opacity:.2;transform:translateY(-30px) scale(1.1)}}
+/* ---- S3 醫囑 ---- */
+.board{position:absolute;background:#b07c4f;border:5px solid var(--ol);border-radius:22px;padding:56px 22px 22px;box-shadow:10px 10px 0 rgba(43,45,66,.18)}
+.board .clip{position:absolute;left:50%;top:-22px;width:170px;height:58px;margin-left:-85px;background:linear-gradient(#d9dde8,#9aa1b5);border:5px solid var(--ol);border-radius:14px}
+.board .sheet{background:#fffdf6;border:3px solid var(--ol);border-radius:8px;padding:18px 26px;height:100%}
+.sheet h2{margin:0 0 4px;font-size:30px;font-weight:900}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:2px dashed #d5cdb8;cursor:pointer;font-weight:800;font-size:21px}
+.opt input{width:26px;height:26px;margin:3px 0 0;accent-color:#2ec4b6;flex:none}
+.opt small{display:block;font-weight:500;font-size:16px;color:#5c6378}
+.fld{display:block;margin:12px 0 0;font-weight:800;font-size:19px}
+.fld input{display:block;width:100%;margin-top:4px;font:inherit;font-weight:500;font-size:19px;padding:8px 12px;border:3px solid var(--ol);border-radius:10px;background:#fff;color:var(--ink);user-select:text;-webkit-user-select:text}
+.fld input:focus{outline:4px solid #3a86ff;outline-offset:1px}
+/* ---- S4 治療 ---- */
+.chart .rows{list-style:none;margin:8px 0 0;padding:0}
+.chart .rows li{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:2px dashed #d5cdb8;opacity:.4}
+.chart .rows li.show{opacity:1}
+.chart .rows li i{flex:none;width:30px;height:30px;border-radius:50%;border:3px solid var(--ol);font-style:normal;font-weight:900;text-align:center;line-height:24px;background:#eee}
+.chart .rows li.ok i{background:#7bd88f}.chart .rows li.wa i{background:#ffbe3d}
+.chart .rows li b{display:block;font-size:20px}.chart .rows li span{display:block;font-size:17px;color:#3d4459;word-break:break-all}
+.dots::after{content:"";animation:dots 1.2s steps(4) infinite}
+@keyframes dots{0%{content:""}25%{content:"．"}50%{content:"．．"}75%{content:"．．．"}}
+.oplamp{position:absolute;border:4px solid var(--ol);border-radius:10px;padding:2px 16px;font-weight:900;font-size:22px;background:#5c1a1a;color:#a66}
+.oplamp.on{background:#d62828;color:#fff;box-shadow:0 0 24px #ff5a5a;animation:blink 1s steps(2) infinite}
+.oplamp.done{background:#1f9d55;color:#fff}
+#sc4.paused *{animation-play-state:paused!important}
+.cpr{animation:cpr .5s ease-in-out infinite}
+@keyframes cpr{50%{transform:translateY(14px)}}
+.chest{animation:chest .5s ease-in-out infinite}
+@keyframes chest{50%{transform:scaleY(.86)}}
+.pulse{animation:pulse .5s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{50%{transform:scale(1.18)}}
+.zap{animation:zap 1.6s steps(1) infinite}
+@keyframes zap{0%,70%{opacity:0}72%,90%{opacity:1}}
+.beep{animation:beep 1s steps(2) infinite}
+@keyframes beep{50%{opacity:.15}}
+.paddles{animation:paddle 1.6s ease-in-out infinite}
+@keyframes paddle{0%,55%{transform:translateX(-14px)}70%,90%{transform:translateX(8px)}}
+.wipe{animation:wipe 1.6s linear infinite}
+@keyframes wipe{from{transform:translateX(0)}to{transform:translateX(104px)}}
+.cloud{animation:cloud .35s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}
+@keyframes cloud{to{transform:scale(1.08) rotate(4deg)}}
+.legfly{animation:legfly 1.8s ease-in infinite}
+@keyframes legfly{0%,20%{transform:translate(0,0) rotate(0);opacity:0}25%{opacity:1}100%{transform:translate(330px,-380px) rotate(620deg);opacity:0}}
+.whoosh{animation:whoosh 1.8s ease-out infinite}
+@keyframes whoosh{0%,25%{opacity:0;transform:translate(0,0)}40%{opacity:1}100%{opacity:0;transform:translate(40px,-120px)}}
+.jab{animation:jab 2.4s ease-in-out infinite}
+@keyframes jab{0%{transform:translateX(300px)}30%,40%{transform:translateX(0)}48%,62%{transform:translate(-22px,10px)}72%{transform:translateX(0)}100%{transform:translateX(300px)}}
+.ouch{animation:ouch 2.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes ouch{0%,46%{opacity:0;transform:scale(.4)}52%,70%{opacity:1;transform:scale(1)}80%,100%{opacity:0}}
+.calm{animation:calm 2.4s steps(1) infinite}@keyframes calm{0%,48%{opacity:1}49%,72%{opacity:0}73%{opacity:1}}
+.grit{animation:grit 2.4s steps(1) infinite}@keyframes grit{0%,48%{opacity:0}49%,72%{opacity:1}73%{opacity:0}}
+.hop{animation:hop 2.4s ease-out infinite}@keyframes hop{0%,48%{transform:none}54%{transform:translateY(-16px)}62%,100%{transform:none}}
+.popin{animation:popin .4s ease-out both}
+@keyframes popin{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+/* ---- S5 印表機 ---- */
+#pclip{position:absolute;overflow:hidden}
+#paper{position:absolute;left:0;top:0;width:100%;height:100%;background:#fff;border:3px solid var(--ol);border-bottom:0;border-radius:6px 6px 0 0;padding:14px 18px;font-size:17px;transform:translateY(102%)}
+#paper.out{animation:rise 2.6s steps(13) forwards}
+@keyframes rise{to{transform:translateY(0)}}
+#paper h3{margin:0;font-size:26px;display:flex;justify-content:space-between;align-items:baseline;border-bottom:3px double var(--ol)}
+#paper h3 span{font-family:Georgia,serif;font-style:italic}
+#paper .pn{font-weight:800;word-break:break-all;margin:6px 0 2px}
+#paper .cw{color:#d62828;font-weight:900;border:3px solid #d62828;border-radius:6px;display:inline-block;padding:0 8px;transform:rotate(-3deg);margin-top:6px}
+.shake{animation:shake .12s linear infinite}
+@keyframes shake{50%{transform:translateX(2px)}}
+#plcd{font-family:Menlo,Consolas,monospace;font-weight:700}
+/* ---- S6 收費 ---- */
+.pos{position:absolute;width:290px;height:470px}
+.pos .body{position:absolute;inset:0;background:linear-gradient(160deg,#3c4257,#23283a);border:5px solid var(--ol);border-radius:34px 34px 26px 26px;box-shadow:inset 0 -10px 0 rgba(0,0,0,.25),8px 8px 0 rgba(43,45,66,.2);z-index:2;padding:22px 20px}
+.pos .slot{position:absolute;left:55px;top:-10px;width:180px;height:22px;background:#111;border:4px solid var(--ol);border-radius:8px;z-index:3}
+.pos .card2{position:absolute;left:62px;top:-140px;width:166px;height:104px;border:4px solid var(--ol);border-radius:12px;background:linear-gradient(135deg,#ffd23f,#f77f00);z-index:1;padding:8px 10px;font:800 14px/1.25 Menlo,Consolas,monospace;color:var(--ink);opacity:0}
+.pos .card2 i{display:block;width:30px;height:22px;background:#e9c46a;border:2px solid var(--ol);border-radius:4px;margin:6px 0}
+.pos.paying .card2{animation:insert 1s ease-in forwards}
+@keyframes insert{0%{opacity:0;transform:translateY(-60px)}20%{opacity:1;transform:translateY(-40px)}100%{opacity:1;transform:translateY(100px)}}
+.pos .brand{color:#b8c0d8;font-size:14px;font-weight:800;display:flex;justify-content:space-between;align-items:center;letter-spacing:1px}
+.pos .brand i{width:14px;height:14px;border-radius:50%;background:#555;border:2px solid #111}
+.pos.ready .brand i{background:#2ecc71;box-shadow:0 0 8px #2ecc71}.pos.paying .brand i{background:#ffbe3d;animation:blink .4s steps(2) infinite}.pos.fail .brand i{background:#ff3b3b}
+.pos .scr{margin:10px 0 14px;height:118px;background:#9fb59a;border:4px solid #111;border-radius:10px;color:#122;font-family:Menlo,Consolas,"PingFang TC",monospace;padding:8px 10px;display:flex;flex-direction:column;justify-content:center;text-align:center;box-shadow:inset 0 0 12px rgba(0,0,0,.35)}
+.pos.sleep .scr{background:#5f6f5c;color:#2b3a2b}
+.pos .scr b{font-size:23px;line-height:1.2}.pos .scr span{font-size:15px;line-height:1.3}
+.keys{display:grid;grid-template-columns:repeat(3,52px) 70px;grid-auto-rows:44px;gap:8px}
+.keys button{font:800 20px/1 Menlo,Consolas,monospace;border:3px solid #111;border-radius:10px;background:linear-gradient(#f4f4f4,#c9ccd6);color:#222;box-shadow:0 4px 0 #111;cursor:pointer;padding:0}
+.keys button:active{transform:translateY(3px);box-shadow:0 1px 0 #111}
+.keys .fn{font-family:inherit;font-size:15px;color:#fff}
+.keys .red{background:linear-gradient(#ff6b6b,#c1121f)}.keys .yel{background:linear-gradient(#ffe066,#e09f00);color:#222}
+.keys .grn{grid-row:span 2;background:linear-gradient(#57e389,#139a43);font-size:21px;line-height:1.15}
+.keys .grn:disabled{background:linear-gradient(#9aa,#788);cursor:not-allowed;color:#ddd;box-shadow:0 4px 0 #111;transform:none}
+.keys .grn:not(:disabled){animation:glowk 1.2s ease-in-out infinite}
+@keyframes glowk{50%{box-shadow:0 4px 0 #111,0 0 0 6px rgba(87,227,137,.55)}}
+.pos.pop{animation:popin .5s ease-out}
+/* ---- S7 領藥 ---- */
+.bag{position:absolute;width:210px;height:236px;background:#fffef8;border:4px solid var(--ol);border-radius:4px 4px 12px 12px;text-align:center;padding:30px 12px 10px;font-size:15px;box-shadow:6px 6px 0 rgba(43,45,66,.15)}
+.bag::before{content:"";position:absolute;left:-4px;right:-4px;top:-14px;height:18px;background:linear-gradient(135deg,#fffef8 33%,transparent 33%) 0 0/18px 18px,linear-gradient(225deg,#fffef8 33%,transparent 33%) 0 0/18px 18px}
+.bag .x{display:inline-block;width:46px;height:46px;background:linear-gradient(#2a9d8f,#2a9d8f) center/46px 16px no-repeat,linear-gradient(#2a9d8f,#2a9d8f) center/16px 46px no-repeat}
+.bag b{display:block;font-size:22px}.bag .bn{font-weight:800;word-break:break-all;line-height:1.3;margin:4px 0}
+.give{animation:give 1.6s cubic-bezier(.3,.7,.3,1) both}
+@keyframes give{from{transform:translateX(230px)}to{transform:none}}
+.sum dl{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;margin:10px 0 0}
+.sum dt{font-weight:800;color:#3d4459}.sum dd{margin:0;word-break:break-all}
+/* ---- 彈窗 ---- */
+dialog{border:4px solid var(--ol);border-radius:18px;background:var(--paper);color:var(--ink);width:min(980px,92vw);max-height:86vh;padding:0;font-size:16px}
+dialog::backdrop{background:rgba(16,18,24,.6)}
+.dh{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:3px solid var(--ol);background:#ffd23f;font-size:20px}
+.dh button{font:inherit;font-size:16px;font-weight:800;border:3px solid var(--ol);border-radius:10px;background:#fff;cursor:pointer;padding:3px 14px}
+.dbody{padding:12px 18px 18px;overflow:auto;max-height:calc(86vh - 60px);user-select:text;-webkit-user-select:text}
+.dbody h3{margin:16px 0 6px;font-size:18px}
+table{border-collapse:collapse;width:100%;font-size:15px}td,th{border-bottom:1px solid #d5cdb8;padding:4px 8px;text-align:left;vertical-align:top;overflow-wrap:anywhere}td:first-child,th{white-space:nowrap}
+th{background:#f3eedf}
+.sev-high{color:var(--hi);font-weight:800}.sev-medium{color:var(--md);font-weight:800}.sev-low{color:#5c6378}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:1ms!important;animation-iteration-count:1!important;animation-delay:0s!important;transition-duration:1ms!important}}
 </style></head><body>
-<header><h1>Watermark Remover</h1><span class="mut">AI 痕跡檢測與清理流水線 · 輸出為「可疑度」提示，非是否為 AI 的二分法判定</span></header>
-<div id="line">
- <section class="st big" id="s1" data-s="active"><h2><span class="no">1</span>服務台</h2>
-  <div class="intro">請把原始 .docx 從小孔遞進來（拖曳到孔上，或點一下）。</div>
-  <div class="body"><div id="desk" title="拖曳 .docx 到小孔，或點擊選擇檔案">
-   <svg viewBox="0 0 240 208" aria-label="服務台">
-    <rect width="240" height="208" fill="var(--wall)"/>
-    <rect x="70" y="8" width="100" height="22" rx="3" fill="#2d3b45"/><text x="120" y="24" text-anchor="middle" font-size="13" fill="#f2e9c9" font-weight="700">服 務 台</text>
-    <rect x="22" y="40" width="196" height="64" rx="4" fill="var(--glass)" stroke="#7d8d90" stroke-width="3"/>
-    <g opacity=".5" style="filter:blur(2.2px)"><circle cx="120" cy="66" r="13" fill="#3b3b3b"/><path d="M92 104 Q96 82 120 80 Q144 82 148 104Z" fill="#3b3b3b"/><rect x="108" y="62" width="24" height="6" fill="#111"/></g>
-    <text x="120" y="98" text-anchor="middle" font-size="8" fill="#6c7a7c">（請勿直視）</text>
-    <rect x="0" y="108" width="240" height="100" fill="var(--wood)"/><rect x="0" y="108" width="240" height="8" fill="var(--wood2)"/>
-    <rect x="30" y="124" width="180" height="70" rx="3" fill="none" stroke="var(--wood2)" stroke-width="2"/>
-    <g id="hole"><rect id="glow" x="104" y="130" width="32" height="16" rx="8" fill="#ffd36a"/><rect x="108" y="134" width="24" height="8" rx="4" fill="#0c0c0c"/></g>
-    <text x="120" y="164" text-anchor="middle" font-size="9" fill="#f0e2c4">文件請由此孔遞交</text>
-    <text x="120" y="178" text-anchor="middle" font-size="7.5" fill="#d8c8a6">午休時間 12:00–13:30 暫停受理</text>
-   </svg><div id="flyer"></div><div id="stamp">已收件</div></div>
-   <div id="fname" class="mut">尚未收件</div><input id="file" type="file" accept=".docx" hidden></div></section>
- <div class="pipe" id="p1"><i></i></div>
- <section class="st" id="s2" data-s="locked"><h2><span class="no">2</span>檢測</h2>
-  <div class="intro">掃描檔案層與文字層，給出<b>可疑度</b>，不下「是不是 AI」的判決。</div>
-  <div class="body" id="b2"><span class="mut">等待收件…</span></div></section>
- <div class="pipe" id="p2"><i></i></div>
- <section class="st" id="s3" data-s="locked"><h2><span class="no">3</span>設定</h2>
-  <div class="intro">選擇是否套用風格層，並指定最終檔的作者與公司。</div>
-  <div class="body"><div class="form">
-   <label><input type="checkbox" id="style"> 啟用文字風格層<small>規則式替換，不處理參考文獻</small></label>
-   <label><input type="checkbox" id="keep"> 保留隱藏文字<small>預設會刪除</small></label>
-   <label>作者／最後修改者<input id="author" type="text" maxlength="100"></label>
-   <label>公司<input id="company" type="text" maxlength="100"></label>
-   <small style="margin:0">留空則使用預設值。</small></div>
-   <button id="go" disabled>開始清理</button></div></section>
- <div class="pipe" id="p3"><i></i></div>
- <section class="st" id="s4" data-s="locked"><h2><span class="no">4</span>清理</h2>
-  <div class="intro">純本地腳本：白名單重建、改屬性、複掃、保真比對（不呼叫 AI）。</div>
-  <div class="body"><ul class="chk" id="chk">
-   <li id="c1"><b>·</b><span>白名單重建</span></li><li id="c2"><b>·</b><span>改寫作者與公司</span></li>
-   <li id="c3"><b>·</b><span>複掃痕跡</span></li><li id="c4"><b>·</b><span>與原檔格式比對</span></li></ul>
-   <button class="ghost" id="more4" hidden>查看清理詳情</button></div></section>
- <div class="pipe" id="p4"><i></i></div>
- <section class="st big" id="s5" data-s="locked"><h2><span class="no">5</span>出件</h2>
-  <div class="intro">乾淨的新檔會從印表機吐出來，取走即可。</div>
-  <div class="body"><div id="printer">
-   <svg viewBox="0 0 240 118" aria-label="印表機">
-    <rect x="50" y="6" width="140" height="36" rx="3" fill="#e9e6dc" stroke="#9c988c" stroke-width="2"/>
-    <rect x="62" y="14" width="116" height="4" fill="#cfcabc"/><rect x="62" y="22" width="90" height="4" fill="#cfcabc"/>
-    <rect x="14" y="40" width="212" height="58" rx="10" fill="#cfcbc0" stroke="#8d897d" stroke-width="2"/>
-    <rect x="28" y="50" width="52" height="14" rx="3" fill="#2a2a2a"/><text x="54" y="60.5" text-anchor="middle" font-size="8" fill="#7CFC9A" id="lcd">待機</text>
-    <circle cx="196" cy="57" r="4" fill="#9a9a9a" id="led"/><circle cx="210" cy="57" r="4" fill="#bbb"/>
-    <rect x="60" y="84" width="120" height="8" rx="3" fill="#161616"/>
-    <rect x="30" y="98" width="180" height="8" rx="3" fill="#a9a597"/></svg>
-   <div id="slotwin"><div id="paper"><b id="pname" style="word-break:break-all">—</b><span class="ln"></span><span class="ln"></span><span class="ln" style="width:70%"></span><span id="pstat" class="ok">已清理</span></div></div></div>
-   <div class="row"><a class="btn" id="dl" href="#" hidden>下載 .docx</a><button class="ghost" id="again" hidden>處理下一份</button></div></div></section>
+<div id="stage">
+ <div id="far" class="layer"></div>
+ <div id="strip" class="layer">
+
+  <!-- S1 掛號 -->
+  <section class="scene" id="sc1" style="left:0">
+   <div class="card" style="left:56px;top:96px;width:520px">
+    <h2><span class="tag">1/7</span>掛號：提交原始檔</h2>
+    <p>把 Word 檔（<b>.docx</b>）從桌面<b>拖進這個視窗</b>，病人會幫你把它遞進櫃檯窗口。</p>
+    <p class="mut">也可以直接點一下櫃檯上方的小窗口，或按下面的按鈕選擇檔案。</p>
+    <div class="row" style="margin-top:8px"><button class="btn" id="pick1">選擇 .docx 檔案</button></div>
+   </div>
+   <div class="slip" style="left:80px;top:430px;width:410px">
+    <h3><span>掛號單</span><span>No.0042</span></h3>
+    <dl><dt>科　別</dt><dd>AI 痕跡科（門診）</dd><dt>病　人</dt><dd id="slipName">（尚未收件）</dd><dt>狀　態</dt><dd id="slipStat">待收件</dd><dt>醫　師</dt><dd>值班醫師（看心情）</dd></dl>
+    <div class="stamp" id="stamp1" style="right:16px;bottom:18px">已收件</div>
+   </div>
+   <div id="lamp"><b id="lampNo">0042</b><span id="lampTx">請掛號</span></div>
+   <button class="hit" id="hit1" style="left:1054px;top:226px;width:142px;height:110px" aria-label="點擊選擇 .docx 檔案（櫃檯窗口）" title="點擊選擇 .docx 檔案"></button>
+   <div class="stamp" id="stamp1w" style="left:1062px;top:190px">已收件</div>
+   <div id="rej1" class="reject" style="left:965px;top:350px;width:320px" hidden>本窗口只受理 .docx<small id="rej1n"></small></div>
+   <div class="bubble" id="clerkSay" style="left:1330px;top:148px;--tx:24px">下一位～（打哈欠）</div>
+  </section>
+
+  <!-- S2 CT -->
+  <section class="scene" id="sc2" style="left:1600px" data-st="idle">
+   <div class="card" id="ctNote" style="left:56px;top:96px;width:540px">
+    <h2><span class="tag">2/7</span>檢測：電腦斷層</h2>
+    <p>正在掃描檔案層與文字層，請病人保持不動（就像截稿前的你）。</p>
+    <p class="mut">結果是<b>可疑度提示</b>，不是「是不是 AI」的判決。</p>
+   </div>
+   <div class="cap" id="ctCap" style="left:56px;top:96px;width:540px" hidden></div>
+   <div class="monitor" style="left:1070px;top:96px;width:500px;height:672px">
+    <h3>檢測結果</h3><span class="disc">可疑度提示 · 非判決</span>
+    <div id="ctLines"></div>
+    <div class="row" id="ctBtns" style="position:absolute;left:22px;bottom:18px;margin:0" hidden>
+     <button class="btn alt" id="ctMore">查看檢測詳情</button><button class="btn go" id="ctNext">繼續 ▶</button></div>
+   </div>
+  </section>
+
+  <!-- S3 醫囑 -->
+  <section class="scene" id="sc3" style="left:3200px">
+   <div class="board" style="left:440px;top:110px;width:740px;height:672px"><div class="clip"></div>
+    <div class="sheet">
+     <h2><span class="tag">3/7</span>醫囑單（清理設定）</h2>
+     <p class="mut" style="margin:0 0 4px">醫師口述、護理師照辦。勾完按下面的按鈕。</p>
+     <label class="opt"><input type="checkbox" id="oStyle"><span>啟用文字風格層<small>規則式替換常見 AI 慣用語；不處理參考文獻</small></span></label>
+     <label class="opt"><input type="checkbox" id="oKeep"><span>保留隱藏文字<small>預設會刪除隱藏文字</small></span></label>
+     <label class="fld">作者／最後修改者<input type="text" id="oAuthor" maxlength="100" autocomplete="off"></label>
+     <label class="fld">公司<input type="text" id="oCompany" maxlength="100" autocomplete="off"></label>
+     <p class="mut" style="margin:8px 0 0">留空＝使用預設值。</p>
+     <div class="row"><button class="btn go" id="order">下達醫囑 ▶</button></div>
+    </div>
+   </div>
+   <div class="bubble" style="left:96px;top:330px;--tx:120px">照這張醫囑辦！</div>
+   <div class="bubble" style="left:1270px;top:378px;--tx:110px">收到，馬上辦！</div>
+  </section>
+
+  <!-- S4 治療 -->
+  <section class="scene" id="sc4" style="left:4800px" data-st="idle">
+   <div class="oplamp" id="opLamp" style="left:968px;top:96px">治療中</div>
+   <div class="card chart" style="left:1124px;top:96px;width:448px;height:680px">
+    <h2><span class="tag">4/7</span>病歷</h2>
+    <p id="chartSt" class="mut">準備治療…</p>
+    <ul class="rows">
+     <li id="r1"><i>·</i><div><b>白名單重建</b><span>—</span></div></li>
+     <li id="r2"><i>·</i><div><b>改寫作者與公司</b><span>—</span></div></li>
+     <li id="r3"><i>·</i><div><b>複掃痕跡</b><span>—</span></div></li>
+     <li id="r4"><i>·</i><div><b>與原檔格式比對</b><span>—</span></div></li>
+    </ul>
+    <div class="row" id="cBtns" hidden><button class="btn alt" id="cMore">查看清理詳情</button><button class="btn go" id="cNext">繼續 ▶</button></div>
+    <div class="row" id="cRetry" hidden><button class="btn" id="cRetryB">重試</button></div>
+   </div>
+   <div class="bubble" id="say4" style="left:380px;top:300px" hidden></div>
+  </section>
+
+  <!-- S5 處方 -->
+  <section class="scene" id="sc5" style="left:6400px">
+   <div id="pclip" style="left:560px;top:120px;width:330px;height:338px">
+    <div id="paper"><h3>處方箋 <span>Rx</span></h3>
+     <div style="margin-top:6px">類別：<b>待修版</b></div>
+     <div class="pn" id="pName">—</div>
+     <div id="pCnt">—</div>
+     <div style="margin-top:6px;color:#5c6378">醫師簽章：<span style="font-family:'Snell Roundhand',cursive;font-size:22px;color:#1d4e89">Dr. ~~~</span></div>
+     <div class="cw">工作副本 · 不可直接繳交</div>
+    </div>
+   </div>
+   <div class="card" style="left:1010px;top:96px;width:562px;height:680px">
+    <h2><span class="tag">5/7</span>處方：待修版</h2>
+    <p id="rvSt" class="mut">處方列印中<span class="dots"></span></p>
+    <ol style="margin:4px 0 10px;padding-left:28px;font-size:19px">
+     <li>下載待修版 .docx</li>
+     <li>用 Word 開啟，用<b>「審閱 → 下一則」</b>逐一看註解並修改</li>
+     <li>完成後<b>存檔</b>，再回來繳費</li>
+    </ol>
+    <div class="warn"><big>待修版是工作副本，不可直接繳交！</big>裡面有給你看的註解；改完請回到這裡繳費，由系統產生最終乾淨版。</div>
+    <p id="rvNone" class="ok" style="font-weight:800" hidden>沒有需要人工處理的段落，可以直接繳費。</p>
+    <div id="rvBtns" hidden>
+     <div class="row"><a class="btn" id="rvDl" href="#" download>下載待修版 .docx</a><button class="btn go" id="rvNext">我改好了，去繳費 ▶</button></div>
+     <div class="row" style="margin-top:10px"><button class="lnk" id="rvSkip">不需人工修改，直接繳費</button></div>
+    </div>
+    <div class="row" id="rvRetry" hidden><button class="btn" id="rvRetryB">重試</button></div>
+   </div>
+   <div class="bubble" id="say5" style="left:226px;top:398px;--tx:70px" hidden>處方印好了！</div>
+  </section>
+
+  <!-- S6 繳費 -->
+  <section class="scene" id="sc6" style="left:8000px">
+   <div class="card" style="left:46px;top:96px;width:500px">
+    <h2><span class="tag">6/7</span>繳費：提交待修版</h2>
+    <div id="s6Need"><p>把<b>改好的待修版 .docx</b> 拖進這個視窗，放到收費窗口的投幣盤；或點一下窗口選檔。</p>
+     <div class="row" style="margin-top:6px"><button class="btn" id="pick6">選擇 .docx 檔案</button><button class="lnk" id="toSkip">不需人工修改，直接繳費</button></div></div>
+    <div id="s6Skip" hidden><p><b>本次不提交待修版</b>：將直接以清理版產生最終乾淨版。</p><button class="lnk" id="toSub">改為提交修改後的檔案</button></div>
+    <p id="s6Got" style="font-weight:800;word-break:break-all" hidden></p>
+    <p class="mut" style="margin-top:10px">接著按刷卡機上的綠色<b>「確認」</b>鍵完成繳費。</p>
+   </div>
+   <div class="pos sleep" id="pos" style="left:572px;top:298px">
+    <div class="slot"></div>
+    <div class="card2">HOSPI CARD<i></i>**** 0042</div>
+    <div class="body">
+     <div class="brand"><span>HOSPI-PAY 3000</span><i></i></div>
+     <div class="scr"><b id="posL1">請先提交待修版</b><span id="posL2">確認鍵暫停服務</span></div>
+     <div class="keys" id="keys">
+      <button tabindex="-1" aria-hidden="true">1</button><button tabindex="-1" aria-hidden="true">2</button><button tabindex="-1" aria-hidden="true">3</button><button class="fn red" tabindex="-1" aria-hidden="true">取消</button>
+      <button tabindex="-1" aria-hidden="true">4</button><button tabindex="-1" aria-hidden="true">5</button><button tabindex="-1" aria-hidden="true">6</button><button class="fn yel" tabindex="-1" aria-hidden="true">更正</button>
+      <button tabindex="-1" aria-hidden="true">7</button><button tabindex="-1" aria-hidden="true">8</button><button tabindex="-1" aria-hidden="true">9</button><button class="fn grn" id="posOK" disabled>確認<br>○</button>
+      <button tabindex="-1" aria-hidden="true">*</button><button tabindex="-1" aria-hidden="true">0</button><button tabindex="-1" aria-hidden="true">#</button>
+     </div>
+    </div>
+   </div>
+   <button class="hit" id="hit6" style="left:1186px;top:404px;width:160px;height:96px" aria-label="點擊選擇修改後的待修版 .docx（收費窗口）" title="點擊選擇 .docx 檔案"></button>
+   <div class="stamp" id="stamp6" style="left:1196px;top:362px">已收件</div>
+   <div id="rej6" class="reject" style="left:1110px;top:520px;width:320px" hidden>本窗口只受理 .docx<small id="rej6n"></small></div>
+   <div class="bubble" style="left:1140px;top:262px;--tx:150px">請到旁邊刷卡～</div>
+  </section>
+
+  <!-- S7 領藥 -->
+  <section class="scene" id="sc7" style="left:9600px">
+   <div class="card sum" style="left:46px;top:96px;width:560px;height:680px">
+    <h2><span class="tag">7/7</span>領藥：最終乾淨版</h2>
+    <p class="mut">最終版已移除工具註解並重新清理，以下為出院前檢查：</p>
+    <dl id="sumDl"></dl>
+    <div class="row" style="margin-top:18px"><a class="btn go" id="fDl" href="#" download>領藥（下載最終乾淨版 .docx）</a></div>
+    <div class="row"><button class="btn alt" id="fMore">查看詳情</button><button class="btn alt" id="again">再掛一個號</button></div>
+   </div>
+   <div class="bag" id="bag" style="left:872px;top:290px"><span class="x"></span><b>藥　袋</b><div class="bn" id="bagName">—</div><div>用法：交出前請再讀一遍</div><div style="color:#5c6378">（每日一次，飯後）</div></div>
+   <div class="bubble" id="say7" style="left:600px;top:470px;--tx:110px" hidden>謝謝藥師！</div>
+   <div class="bubble" style="left:1110px;top:196px;--tx:110px">請核對姓名（檔名）</div>
+  </section>
+ </div>
+ <div id="near" class="layer"></div>
+
+ <header id="hud"><div class="brand">文件醫院<small>Watermark Remover</small></div><ol id="steps"></ol></header>
+ <div id="cast" role="alert" hidden><b>院內廣播</b><span id="castT"></span><button id="castX">知道了</button></div>
+ <footer id="fine">每個發現都只是線索（可疑度），不是判決；同一訊號在不同文體意義不同，請搭配人工判斷。</footer>
 </div>
-<div id="fine"><span id="msg"></span><span class="mut">每個發現都只是線索；同一訊號在不同文體意義不同，請搭配人工判斷。</span></div>
-<dialog id="dlg"><div class="dh"><b id="dt">詳情</b><button class="ghost" onclick="dlg.close()">關閉</button></div><div class="dbody" id="dbody"></div></dialog>
+<dialog id="dlg"><div class="dh"><b id="dlgT">詳情</b><button id="dlgX">關閉</button></div><div class="dbody" id="dlgB"></div></dialog>
+<input type="file" id="fileIn" accept=".docx" hidden>
 <script>
-const $=id=>document.getElementById(id);let jid=null,info=null,res=null;
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-function setStep(n){for(let i=1;i<=5;i++){$('s'+i).dataset.s=i<n?'done':i==n?'active':'locked'}for(let i=1;i<=4;i++)$('p'+i).classList.toggle('on',i<n)}
-function ftable(a){if(!a.length)return '<p class="ok">未發現痕跡</p>';return '<table><tr><th>嚴重度</th><th>層</th><th>項目</th><th>位置／說明</th></tr>'+a.map(f=>`<tr><td class="${f.severity}">${f.severity}</td><td>${esc(f.layer)}</td><td>${esc(f.code)}</td><td>${esc(f.where)} ${esc(f.detail)}</td></tr>`).join('')+'</table>'}
-function show(title,html){$('dt').textContent=title;$('dbody').innerHTML=html;$('dlg').showModal()}
-function err(t){$('msg').textContent=t?'錯誤：'+t:''}
-function reset(){jid=info=res=null;err('');$('fname').textContent='尚未收件';$('stamp').classList.remove('show');$('b2').innerHTML='<span class="mut">等待收件…</span>';
- $('go').disabled=true;$('more4').hidden=true;['c1','c2','c3','c4'].forEach(c=>{$(c).className='';$(c).firstChild.textContent='·'});
- $('paper').className='';$('printer').classList.remove('busy');$('lcd').textContent='待機';$('led').setAttribute('fill','#9a9a9a');$('dl').hidden=true;$('again').hidden=true;setStep(1)}
-async function upload(file){
- err('');if(!/\.docx$/i.test(file.name)){err('請選擇 .docx 檔');return}
- $('flyer').textContent=file.name;$('flyer').classList.remove('go');void $('flyer').offsetWidth;$('flyer').classList.add('go');
- $('fname').textContent='收件中…';
- const [r]=await Promise.all([fetch('/api/upload?name='+encodeURIComponent(file.name),{method:'POST',body:file}).then(x=>x.json()),sleep(1000)]);
- if(r.error){err(r.error);$('fname').textContent='尚未收件';return}
- info=r;jid=r.id;$('fname').textContent=r.name;$('stamp').classList.add('show');
- if(!$('author').value)$('author').value=r.defaults.author;if(!$('company').value)$('company').value=r.defaults.company;
- const cnt={high:0,medium:0,low:0};r.findings.forEach(f=>cnt[f.severity]++);
- const tot=r.categories.reduce((s,c)=>s+c.count,0);
- $('b2').innerHTML=`<div class="mut">檔案層痕跡</div><div class="sev"><div class="hi"><b>${cnt.high}</b>高</div><div class="md"><b>${cnt.medium}</b>中</div><div class="lo"><b>${cnt.low}</b>低</div></div>
-  <div class="mut">文字層可疑部位：${tot} 處</div><ul class="tops">${r.categories.slice(0,3).map(c=>`<li><span>[${c.conf}] ${esc(c.label)}</span><b>${c.count}</b></li>`).join('')||'<li>無</li>'}</ul>
-  <div class="row"><button class="ghost" id="d2">查看詳情</button><a class="btn ghost" target="_blank" href="/report/${jid}">完整報告</a></div>`;
- $('d2').onclick=()=>show('檢測詳情',`<h3>檔案層</h3>${ftable(r.findings)}<h3>文字層可疑部位（信心為啟發式，非機率）</h3>`+(r.categories.length?'<table><tr><th>信心</th><th>類型</th><th>數量</th><th>處理</th></tr>'+r.categories.map(c=>`<tr><td>${c.conf}</td><td>${esc(c.label)}</td><td>${c.count}</td><td>${c.auto?'可自動修':'需人工'}</td></tr>`).join('')+'</table>':'<p class="ok">沒有可疑部位</p>'));
- $('go').disabled=false;setStep(3)}
-async function clean(){
- err('');$('go').disabled=true;setStep(4);const L=['c1','c2','c3','c4'];
- L.forEach(c=>{$(c).className='';$(c).firstChild.textContent='·'});$('c1').className='run';$('c1').firstChild.textContent='●';
- const q=`id=${jid}&style=${$('style').checked?1:0}&keep_hidden=${$('keep').checked?1:0}&author=${encodeURIComponent($('author').value)}&company=${encodeURIComponent($('company').value)}`;
- const j=await fetch('/api/clean?'+q,{method:'POST'}).then(x=>x.json()).catch(e=>({error:String(e)}));
- if(j.error){err(j.error);L.forEach(c=>{$(c).className=''});$('c1').className='bad';$('c1').firstChild.textContent='✕';$('go').disabled=false;setStep(3);return}
- res=j;const high=j.after.filter(f=>f.severity=='high').length;
- const notes=[`重建完成，丟棄 ${j.dropped.length} 個部件`,`作者／公司已寫入`,j.after.length?`複掃剩 ${j.after.length} 項（高 ${high}）`:'複掃：未發現痕跡',j.diffs.length?`格式差異 ${j.diffs.length} 項${$('style').checked?'（風格層，文字差異屬預期）':''}`:'格式與原檔一致'];
- for(let i=0;i<4;i++){const c=$(L[i]);c.className=(i==2&&high)||(i==3&&j.diffs.length&&!$('style').checked)?'bad':'ok2';c.firstChild.textContent=c.className=='bad'?'!':'✓';c.lastChild.textContent=notes[i];await sleep(180)}
- $('more4').hidden=false;
- $('more4').onclick=()=>show('清理詳情',`<h3>複掃</h3>${ftable(j.after)}<h3>與原檔比對</h3>`+(j.diffs.length?'<ul>'+j.diffs.map(d=>`<li>${esc(d)}</li>`).join('')+'</ul>':'<p class="ok">段落／樣式／表格／圖片一致</p>')+
-  (Object.keys(j.style_log||{}).length?'<h3>風格層變更</h3><table>'+Object.entries(j.style_log).map(([g,v])=>`<tr><td>${esc(g)}</td><td>${v.count} 處</td><td>${esc((v.examples||[]).join('；'))}</td></tr>`).join('')+'</table>':'')+`<p class="mut">已丟棄部件：${esc(j.dropped.join(', ')||'無')}</p>`);
- await print()}
-async function print(){
- setStep(5);$('pname').textContent=info.name.replace(/\.docx$/i,'')+'_clean.docx';$('lcd').textContent='列印中';$('led').setAttribute('fill','#f6a');
- $('printer').classList.add('busy');$('paper').className='';void $('paper').offsetWidth;$('paper').classList.add('out');
- await sleep(2400);$('printer').classList.remove('busy');$('lcd').textContent='完成';$('led').setAttribute('fill','#3c3');
- $('dl').href='/download/'+jid;$('dl').hidden=false;$('again').hidden=false;setStep(5);$('s5').dataset.s='active'}
-const desk=$('desk');desk.onclick=()=>{if(document.getElementById('s1').dataset.s=='active')$('file').click()};
-$('file').onchange=e=>{const f=e.target.files[0];e.target.value='';f&&upload(f)};
-['dragenter','dragover'].forEach(t=>desk.addEventListener(t,e=>{e.preventDefault();desk.classList.add('over')}));
-['dragleave','drop'].forEach(t=>desk.addEventListener(t,e=>{e.preventDefault();desk.classList.remove('over')}));
-desk.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];f&&upload(f)});
-window.addEventListener('dragover',e=>e.preventDefault());window.addEventListener('drop',e=>e.preventDefault());
-$('go').onclick=clean;$('again').onclick=reset;
+"use strict";
+/* ============ 基本工具 ============ */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const T=ms=>RM?Math.min(ms,150):ms;
+const sleep=ms=>new Promise(r=>setTimeout(r,T(ms)));
+const PAN=1400, W=1600;
+const OL='#2b2d42',SK='#f6caa4',GOWN='#a9d6f0';
+const RISK_TX={high:'高',medium:'中',low:'低'};
+const enc=encodeURIComponent;
+
+/* 共用狀態（重置時整個換新） */
+const S={};let TOKEN=0;
+function fresh(){Object.assign(S,{step:1,jid:null,info:null,risk:'low',style:false,keep:false,author:'',company:'',clean:null,review:null,fin:null,skip:false,file6:null,busy:false,paid:false})}
+fresh();
+
+/* 呼叫後端；錯誤一律丟出 Error（訊息給廣播條用） */
+let api=async(path,body)=>{
+ let r,j;
+ try{r=await fetch(path,{method:'POST',body:body??new Uint8Array(0)})}catch(e){throw new Error('無法連線到伺服器，請確認服務仍在執行')}
+ try{j=await r.json()}catch(e){throw new Error('伺服器回應格式異常（HTTP '+r.status+'）')}
+ if(!r.ok||j.error)throw new Error(j.error||('HTTP '+r.status));
+ return j};
+
+/* ============ SVG 小工具（卡通扁平風） ============ */
+const sw=(w=4)=>`stroke="${OL}" stroke-width="${w}"`;
+const limb=(d,c,w=13)=>`<path d="${d}" fill="none" stroke="${OL}" stroke-width="${w+8}"/><path d="${d}" fill="none" stroke="${c}" stroke-width="${w}"/>`;
+const hand=(x,y,c=SK)=>`<circle cx="${x}" cy="${y}" r="10" fill="${c}" ${sw()}/>`;
+function face(r,m){
+ const e=r*.33,ey=-r*.04,my=r*.42;let s='';
+ const dot=x=>`<circle cx="${x}" cy="${ey}" r="${r*.09}" fill="${OL}"/>`;
+ const arc=(x,up)=>`<path d="M${x-r*.13} ${ey+(up?3:-2)} Q${x} ${ey+(up?-r*.16:r*.14)} ${x+r*.13} ${ey+(up?3:-2)}" fill="none" ${sw()}/>`;
+ const chev=(x,d)=>`<path d="M${x-d*r*.12} ${ey-r*.1} L${x+d*r*.1} ${ey} L${x-d*r*.12} ${ey+r*.1}" fill="none" ${sw()}/>`;
+ if(m==='ko')s=[-e,e].map(x=>`<path d="M${x-7} ${ey-7}l14 14M${x+7} ${ey-7}l-14 14" ${sw()}/>`).join('')+`<path d="M${-r*.25} ${my}q${r*.08} -8 ${r*.16} 0t${r*.16} 0t${r*.16} 0" fill="none" ${sw()}/>`;
+ else if(m==='grit')s=chev(-e,1)+chev(e,-1)+`<rect x="${-r*.3}" y="${my-r*.12}" width="${r*.6}" height="${r*.26}" rx="4" fill="#fff" ${sw(3)}/><path d="M${-r*.1} ${my-r*.12}v${r*.26}M${r*.1} ${my-r*.12}v${r*.26}M${-r*.3} ${my+1}h${r*.6}" ${sw(2)}/>`;
+ else if(m==='relief')s=arc(-e,false)+arc(e,false)+`<ellipse cx="${r*.05}" cy="${my}" rx="${r*.1}" ry="${r*.08}" fill="${OL}"/>`;
+ else if(m==='joy')s=arc(-e,true)+arc(e,true)+`<path d="M${-r*.28} ${my-4} Q0 ${my+r*.42} ${r*.28} ${my-4}Z" fill="#c0392b" ${sw(3)}/>`;
+ else if(m==='worry')s=dot(-e)+dot(e)+`<path d="M${-e-9} ${ey-r*.2} l15 -7M${e+9} ${ey-r*.2} l-15 -7" ${sw(3)}/><path d="M${-r*.16} ${my+4} q${r*.16} -10 ${r*.32} 0" fill="none" ${sw()}/>`;
+ else if(m==='o')s=dot(-e)+dot(e)+`<ellipse cx="0" cy="${my}" rx="${r*.12}" ry="${r*.15}" fill="${OL}"/>`;
+ else if(m==='sleepy')s=`<path d="M${-e-8} ${ey}h16M${e-8} ${ey}h16" ${sw()}/><ellipse cx="0" cy="${my}" rx="${r*.1}" ry="${r*.12}" fill="${OL}"/>`;
+ else s=dot(-e)+dot(e)+`<path d="M${-r*.24} ${my} Q0 ${my+r*.22} ${r*.24} ${my}" fill="none" ${sw()}/>`;
+ return s+`<ellipse cx="${-r*.55}" cy="${r*.22}" rx="${r*.13}" ry="${r*.08}" fill="#ff8fa3" opacity=".6"/><ellipse cx="${r*.55}" cy="${r*.22}" rx="${r*.13}" ry="${r*.08}" fill="#ff8fa3" opacity=".6"/>`}
+function head(x,y,r,o={}){const c=o.skin||SK;return `<g transform="translate(${x} ${y})"><circle cx="${-r}" cy="4" r="${r*.2}" fill="${c}" ${sw()}/><circle cx="${r}" cy="4" r="${r*.2}" fill="${c}" ${sw()}/><circle r="${r}" fill="${c}" ${sw()}/>${o.hair||''}${o.mood==='none'?'':face(r,o.mood)}${o.extra||''}</g>`}
+const HAIR={
+ pt:r=>`<path d="M-8 ${-r+1}q4 -20 12 -4q5 -16 12 2" fill="none" ${sw()}/>`,
+ doc:r=>`<path d="M${-r} -4Q${-r-2} ${-r-8} 0 ${-r-5}Q${r+2} ${-r-8} ${r} -4Q${r*.5} ${-r*.62} ${-r*.2} ${-r*.5}Q${-r*.7} ${-r*.45} ${-r} -4Z" fill="#3b2f2f" ${sw()}/>`,
+ nurse:r=>`<circle cx="0" cy="${-r-8}" r="${r*.32}" fill="#7a4b2a" ${sw()}/><path d="M${-r} 0Q${-r} ${-r-6} 0 ${-r-4}Q${r} ${-r-6} ${r} 0Q${r*.4} ${-r*.5} 0 ${-r*.55}Q${-r*.4} ${-r*.5} ${-r} 0Z" fill="#7a4b2a" ${sw()}/>`,
+ short:r=>`<path d="M${-r} -2Q${-r} ${-r-6} 0 ${-r-4}Q${r} ${-r-6} ${r} -2Q${r*.7} ${-r*.5} 0 ${-r*.6}Q${-r*.7} ${-r*.5} ${-r} -2Z" fill="#222" ${sw()}/>`};
+const CAP=r=>`<path d="M${-r*.62} ${-r*.78}L${-r*.5} ${-r*1.12}H${r*.5}L${r*.62} ${-r*.78}Z" fill="#fff" ${sw()}/><path d="M0 ${-r*1.06}v${r*.22}M${-r*.11} ${-r*.95}h${r*.22}" stroke="#e63946" stroke-width="5"/>`;
+const GLASSES=r=>`<circle cx="${-r*.33}" cy="${-r*.04}" r="${r*.22}" fill="rgba(255,255,255,.35)" ${sw(3)}/><circle cx="${r*.33}" cy="${-r*.04}" r="${r*.22}" fill="rgba(255,255,255,.35)" ${sw(3)}/><path d="M${-r*.11} ${-r*.04}h${r*.22}" ${sw(3)}/>`;
+const MIRROR=r=>`<path d="M${-r} ${-r*.42}Q0 ${-r*.62} ${r} ${-r*.42}" fill="none" stroke="#444" stroke-width="5"/><circle cx="0" cy="${-r*.56}" r="${r*.24}" fill="#dfe7ef" ${sw(3)}/><circle cx="0" cy="${-r*.56}" r="${r*.08}" fill="#9aa"/>`;
+
+/* 病人站姿（腳底為原點，面向右）。cont=顯示治療後的延續造型（輪椅/繃帶等，依 #stage 的 rk-* class） */
+function patient(o={}){
+ const arms=o.arm==='up'?limb('M-24 -106 Q-46 -140 -40 -176',SK)+hand(-40,-180)+limb('M24 -106 Q46 -140 40 -176',SK)+hand(40,-180)
+  :o.arm==='none'?limb('M-24 -106 Q-42 -84 -38 -64',SK)+hand(-38,-60)
+  :limb('M-24 -106 Q-42 -84 -38 -64',SK)+hand(-38,-60)+limb('M24 -106 Q42 -84 38 -64',SK)+hand(38,-60);
+ return `<g><rect x="-20" y="-52" width="13" height="46" rx="5" fill="${SK}" ${sw()}/><ellipse cx="-15" cy="-6" rx="16" ry="8" fill="#6b4f3a" ${sw()}/>
+ <g class="${o.cont?'leg-ok':''}"><rect x="7" y="-52" width="13" height="46" rx="5" fill="${SK}" ${sw()}/><ellipse cx="17" cy="-6" rx="16" ry="8" fill="#6b4f3a" ${sw()}/></g>
+ ${o.cont?`<g class="leg-stump"><rect x="5" y="-54" width="17" height="22" rx="8" fill="#fff" ${sw()}/><path d="M8 -42h11M8 -36h11" stroke="#ccc" stroke-width="2"/><path d="M50 -118L60 -4" stroke="#8d99ae" stroke-width="7"/><path d="M42 -118h18" ${sw(6)}/><path d="M50 -118L60 -4" fill="none" ${sw(2)}/></g>`:''}
+ <path d="M-36 -46L-27 -116Q0 -126 27 -116L36 -46Q0 -38 -36 -46Z" fill="${GOWN}" ${sw()}/>
+ <g fill="#fff" opacity=".85"><circle cx="-14" cy="-96" r="3"/><circle cx="10" cy="-80" r="3"/><circle cx="-6" cy="-62" r="3"/><circle cx="18" cy="-104" r="3"/></g>
+ ${arms}${head(0,-158,40,{hair:HAIR.pt(40),mood:o.mood||'smile',extra:o.cont?`<g class="hd-band"><path d="M-40 -14Q0 -36 40 -14" fill="none" stroke="#fff" stroke-width="11"/><path d="M-40 -14Q0 -36 40 -14" fill="none" ${sw(2)}/><path d="M22 -30l14 -12M22 -30l16 0" stroke="#fff" stroke-width="6"/></g>`:''})}</g>`}
+/* 病人躺姿（床面為 y=0，頭在左）。o.prone=趴著（屁股鼓起）、o.stump=近側腿只剩繃帶、o.noLeg=近側腿不畫 */
+function lying(o={}){
+ const legN=o.stump?`<rect x="44" y="-26" width="36" height="17" rx="8" fill="#fff" ${sw()}/><path d="M80 -26l12 -8M80 -10l12 8" stroke="#fff" stroke-width="5"/><path d="M80 -26l12 -8M80 -10l12 8" fill="none" ${sw(2)}/>`
+  :o.noLeg?`<rect x="44" y="-26" width="18" height="17" rx="8" fill="#fff" ${sw()}/>`
+  :`<rect x="44" y="-26" width="104" height="17" rx="8" fill="${SK}" ${sw()}/><ellipse cx="152" cy="-30" rx="9" ry="17" fill="#6b4f3a" ${sw()}/>`;
+ return `<g><ellipse cx="-150" cy="-12" rx="50" ry="18" fill="#fff" ${sw()}/>
+ <rect x="44" y="-46" width="98" height="17" rx="8" fill="${SK}" ${sw()}/><ellipse cx="146" cy="-50" rx="9" ry="17" fill="#6b4f3a" ${sw()}/>
+ ${o.prone?`<path d="M-20 -50Q10 -88 48 -52" fill="${GOWN}" ${sw()}/>`:''}
+ <rect x="-114" y="-56" width="168" height="56" rx="26" fill="${GOWN}" ${sw()}/>
+ ${o.prone?`<path d="M-18 -50Q10 -84 46 -52" fill="${GOWN}" stroke="none"/><path d="M-20 -50Q10 -88 48 -52" fill="none" ${sw()}/>${o.aid?`<g transform="translate(16 -70) rotate(-20)"><rect x="-16" y="-6" width="32" height="12" rx="5" fill="#f4c095" ${sw(3)}/><rect x="-6" y="-16" width="12" height="32" rx="5" fill="#f4c095" ${sw(3)}/></g>`:''}`:`<g fill="#fff" opacity=".85"><circle cx="-60" cy="-34" r="3"/><circle cx="-20" cy="-20" r="3"/><circle cx="20" cy="-38" r="3"/></g>`}
+ ${legN}${limb('M-86 -24 L-14 -14',SK)}${hand(-10,-14)}
+ ${o.faces?o.faces:head(-150,-50,40,{hair:HAIR.pt(40),mood:o.mood||'smile'})}</g>`}
+/* 病人坐在床上（臀部為原點，腿向右伸） */
+function sitting(o={}){
+ const legN=o.stump?`<rect x="-6" y="-19" width="76" height="21" rx="10" fill="#fff" ${sw()}/><path d="M44 -19v21M54 -19v21" stroke="#cfd6e4" stroke-width="3"/><path d="M68 -10l16 -14v26Z" fill="#ff8fa3" ${sw(3)}/><circle cx="68" cy="-10" r="5" fill="#ff8fa3" ${sw(3)}/>`
+  :`<rect x="-6" y="-17" width="112" height="17" rx="8" fill="${SK}" ${sw()}/><ellipse cx="110" cy="-22" rx="9" ry="17" fill="#6b4f3a" ${sw()}/>`;
+ return `<g><rect x="-6" y="-36" width="108" height="17" rx="8" fill="${SK}" ${sw()}/><ellipse cx="104" cy="-40" rx="9" ry="17" fill="#6b4f3a" ${sw()}/>${legN}
+ <path d="M-34 0L-28 -84Q0 -94 28 -84L36 0Z" fill="${GOWN}" ${sw()}/>
+ ${o.wave?limb('M22 -76Q52 -100 58 -136',SK)+hand(58,-140):limb('M22 -76Q44 -50 54 -30',SK)+hand(56,-28)}${limb('M-22 -76Q-44 -50 -40 -28',SK)}${hand(-40,-24)}
+ ${head(0,-124,40,{hair:HAIR.pt(40),mood:o.mood||'joy'})}</g>`}
+/* 醫師（腳底原點，面向右）pose: point|cpr|scissors|relax|cross */
+function doctor(pose='stand',mood='smile'){
+ const c='#fff';let arms;
+ if(pose==='point')arms=limb('M-42 -255Q-62 -200 -56 -160',c,16)+hand(-56,-154)+limb('M40 -255L140 -268',c,16)+hand(146,-269)+`<path d="M152 -270h20" ${sw(7)}/><path d="M152 -270h18" stroke="${SK}" stroke-width="4"/>`;
+ else if(pose==='cpr')arms=`<g class="cpr">`+limb('M-40 -255Q-20 -215 -4 -186',c,16)+limb('M40 -255Q24 -215 8 -186',c,16)+hand(2,-182)+hand(10,-180)+'</g>';
+ else if(pose==='scissors')arms=limb('M-42 -255Q-62 -200 -56 -160',c,16)+hand(-56,-154)+limb('M40 -255Q80 -220 96 -196',c,16)+`<g transform="translate(100 -196) rotate(28)"><g class="pulse"><ellipse cx="-20" cy="-10" rx="16" ry="12" fill="#ff8c42" ${sw()}/><ellipse cx="-20" cy="14" rx="16" ry="12" fill="#ff8c42" ${sw()}/><path d="M-6 -6L90 14M-6 10L90 -10" stroke="#cfd6e4" stroke-width="12"/><path d="M-6 -6L90 14M-6 10L90 -10" fill="none" ${sw(2)}/></g></g>`+hand(98,-196);
+ else if(pose==='relax')arms=limb('M-42 -255Q-62 -200 -56 -160',c,16)+hand(-56,-154)+limb('M40 -255Q92 -300 40 -334',c,16)+hand(36,-338)+`<path d="M66 -360q6 12 0 18q-6 -6 0 -18Z" fill="#7cc6ff" ${sw(2)}/>`;
+ else if(pose==='cross')arms=limb('M-40 -250Q-20 -200 34 -206',c,16)+limb('M40 -250Q20 -190 -34 -200',c,16)+hand(-36,-200)+hand(36,-206);
+ else arms=limb('M-42 -255Q-62 -200 -56 -160',c,16)+hand(-56,-154)+limb('M42 -255Q62 -200 56 -160',c,16)+hand(56,-154);
+ return `<g><rect x="-28" y="-128" width="22" height="120" fill="#3d405b" ${sw()}/><rect x="6" y="-128" width="22" height="120" fill="#3d405b" ${sw()}/>
+ <ellipse cx="-16" cy="-8" rx="22" ry="10" fill="#222" ${sw()}/><ellipse cx="22" cy="-8" rx="22" ry="10" fill="#222" ${sw()}/>
+ <rect x="-11" y="-292" width="22" height="22" fill="${SK}" ${sw()}/>
+ <path d="M-58 -112L-48 -264Q0 -284 48 -264L58 -112Z" fill="#fff" ${sw()}/>
+ <path d="M-16 -272L0 -226L16 -272Z" fill="#9ecbff" ${sw(3)}/><path d="M0 -264l-7 12 7 34 7 -34Z" fill="#e63946" ${sw(3)}/>
+ <path d="M0 -224V-116" ${sw(3)}/><path d="M20 -214h24v24h-24Z" fill="none" ${sw(3)}/><path d="M26 -216v-12M34 -216v-10" stroke="#3a86ff" stroke-width="4"/>
+ <path d="M-22 -270Q-34 -222 -14 -204Q4 -196 8 -210" fill="none" stroke="#555" stroke-width="5"/><circle cx="8" cy="-212" r="7" fill="#bbb" ${sw(3)}/>
+ ${arms}${head(0,-326,46,{hair:HAIR.doc(46),mood,extra:GLASSES(46)+MIRROR(46)})}</g>`}
+/* 護理師 / 藥師 / 收費員（腳底原點，面向右）pose: stand|note|paddles|syringe|push|run|give */
+function nurse(pose='stand',mood='smile',o={}){
+ const top=o.top||'#5ec2b7',pants=o.pants||'#3aa597',sk=o.skin||'#e9b48a';let arms='';
+ const A=(d,hx,hy)=>limb(d,top,14)+hand(hx,hy,sk);
+ if(pose==='note')arms=A('M-38 -200Q-58 -150 -48 -120',-48,-116)+A('M38 -200Q50 -160 30 -150',28,-150)+`<rect x="22" y="-196" width="44" height="56" rx="4" fill="#fff" ${sw(3)}/><path d="M30 -180h28M30 -170h28M30 -160h18" stroke="#999" stroke-width="3"/>`;
+ else if(pose==='paddles')arms=`<g class="paddles">`+A('M-36 -200Q10 -180 96 -196',96,-196)+A('M38 -200Q80 -188 118 -184',118,-184)+`<rect x="86" y="-222" width="26" height="40" rx="6" fill="#ffd23f" ${sw()}/><rect x="110" y="-208" width="26" height="40" rx="6" fill="#ffd23f" ${sw()}/></g>`;
+ else if(pose==='syringe')arms=A('M-36 -200Q-20 -250 40 -282',40,-282)+`<g transform="translate(60 -282) rotate(6)"><rect x="0" y="-16" width="104" height="32" rx="8" fill="#dff3ff" ${sw()}/><rect x="46" y="-12" width="54" height="24" rx="5" fill="#9be7a8"/><rect x="0" y="-16" width="104" height="32" rx="8" fill="none" ${sw()}/><path d="M104 0h46" ${sw(5)}/><path d="M-30 0h30M-30 -20v40" ${sw(8)}/><path d="M24 -16v10M48 -16v10M72 -16v10" ${sw(2)}/></g>`+A('M38 -200Q70 -230 90 -270',90,-272);
+ else if(pose==='push')arms=A('M-34 -200Q10 -170 60 -172',60,-172)+A('M38 -200Q60 -180 70 -168',70,-168);
+ else if(pose==='run')arms=A('M-36 -200Q-70 -190 -84 -220',-86,-224)+A('M38 -200Q76 -186 92 -150',94,-146);
+ else if(pose==='give')arms=A('M-38 -200Q-58 -150 -48 -120',-48,-116);
+ else arms=A('M-38 -200Q-58 -150 -48 -120',-48,-116)+A('M38 -200Q58 -150 48 -120',48,-116);
+ return `<g><rect x="-22" y="-102" width="18" height="96" fill="${pants}" ${sw()}/><rect x="4" y="-102" width="18" height="96" fill="${pants}" ${sw()}/>
+ <ellipse cx="-14" cy="-7" rx="18" ry="9" fill="#fff" ${sw()}/><ellipse cx="18" cy="-7" rx="18" ry="9" fill="#fff" ${sw()}/>
+ <rect x="-9" y="-232" width="18" height="18" fill="${sk}" ${sw()}/>
+ <path d="M-46 -96L-40 -218Q0 -234 40 -218L46 -96Z" fill="${top}" ${sw()}/><path d="M-14 -224L0 -200L14 -224" fill="none" ${sw(3)}/>
+ ${o.apron?`<path d="M-30 -196H30L36 -100H-36Z" fill="${o.apron}" ${sw(3)}/>`:''}
+ ${arms}${head(0,-262,42,{skin:sk,hair:(o.hair||HAIR.nurse)(42),mood,extra:(o.cap===false?'':CAP(42))+(o.extra||'')})}</g>`}
+/* 房間：牆、護牆板、地板；win=挖空窗戶（露出遠景視差層） */
+function room(wall,trim,win=[]){
+ const holes=win.map(([x,y,w,h])=>`M${x} ${y}h${w}v${h}h${-w}Z`).join('');
+ let s=`<path fill-rule="evenodd" fill="${wall}" d="M0 0H1600V782H0Z${holes}"/>
+ <rect y="590" width="1600" height="192" fill="${trim}"/><rect y="584" width="1600" height="10" fill="${OL}" opacity=".18"/>
+ <rect y="772" width="1600" height="12" fill="${OL}" opacity=".45"/><rect y="782" width="1600" height="120" fill="#c3ccd3"/>`;
+ for(let x=-60;x<1700;x+=120)s+=`<path d="M${x} 782l-46 120" stroke="#aab4bd" stroke-width="3"/>`;
+ s+=`<path d="M0 836H1600" stroke="#aab4bd" stroke-width="3"/>`;
+ for(const [x,y,w,h] of win)s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#fff" stroke-width="16"/><path d="M${x+w/2} ${y}v${h}M${x} ${y+h*.45}h${w}" stroke="#fff" stroke-width="10"/><rect x="${x-8}" y="${y-8}" width="${w+16}" height="${h+16}" fill="none" ${sw()}/><rect x="${x-20}" y="${y+h+8}" width="${w+40}" height="16" rx="4" fill="#fff" ${sw()}/>`;
+ return s+`<rect x="-14" y="66" width="28" height="716" fill="#f4f1ea" ${sw(3)}/>`}
+const svg=inner=>`<svg class="bg" viewBox="0 0 1600 900" aria-hidden="true">${inner}</svg>`;
+const sign=(x,y,w,h,txt,fs=18,bg='#fff',fg=OL,rot=0)=>`<g transform="translate(${x} ${y}) rotate(${rot})"><rect width="${w}" height="${h}" rx="6" fill="${bg}" ${sw(3)}/>${txt.split('|').map((t,i,a)=>`<text x="${w/2}" y="${h/2+fs*.36+(i-(a.length-1)/2)*fs*1.25}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="${fg}">${t}</text>`).join('')}</g>`;
+/* 手臂＋手上文件（S1、S6 由滑鼠控制） */
+const armRig=n=>`<g id="arm${n}"><path fill="none" stroke="${OL}" stroke-width="22"/><path fill="none" stroke="${SK}" stroke-width="14"/></g>
+ <g id="hand${n}"><g id="doc${n}" style="display:none"><g transform="rotate(-10)"><path d="M-4 -74h36l14 14v58h-50Z" fill="#fff" ${sw(3)}/><path d="M32 -74v14h14" fill="none" ${sw(3)}/><rect x="2" y="-56" width="18" height="18" rx="3" fill="#2b579a"/><text x="11" y="-42" text-anchor="middle" font-size="14" font-weight="900" fill="#fff">W</text><path d="M2 -30h36M2 -22h36M2 -14h26" stroke="#9aa" stroke-width="3"/></g></g><circle r="11" fill="${SK}" ${sw()}/></g>`;
+
+/* ============ 各場景背景 ============ */
+function bg1(){return svg(room('#d6efe4','#a8d5c2')+`
+ <g transform="translate(600 104)"><rect width="230" height="96" rx="12" fill="#2b2d42"/><rect x="6" y="6" width="218" height="84" rx="8" fill="#111"/></g>
+ <!-- 職員（玻璃後） --><g transform="translate(1340 512)">${nurse('stand','sleepy',{top:'#8e7dbe',cap:false,hair:HAIR.short,skin:'#f1c27d',extra:GLASSES(42)})}</g>
+ <rect x="1250" y="270" width="40" height="44" rx="6" fill="#fff" ${sw()}/><path d="M1290 280q16 4 0 22" fill="none" ${sw()}/><path d="M1260 260q6 -14 0 -24M1276 260q6 -14 0 -24" stroke="#aaa" stroke-width="3" fill="none"/>
+ <rect x="880" y="150" width="660" height="164" fill="#bfe6f2" opacity=".42"/><rect x="880" y="150" width="660" height="164" fill="none" stroke="#7d8d90" stroke-width="10"/><path d="M1210 150v164" stroke="#7d8d90" stroke-width="8"/>
+ <path d="M920 170l60 60M940 170l30 30M1240 170l60 60" stroke="#fff" stroke-width="5" opacity=".6"/>
+ ${sign(892,166,148,62,'午休|12:00–13:30',17,'#fff8c4')}${sign(1398,240,130,56,'請勿敲打玻璃|（會醒）',15,'#ffe0e0')}
+ ${sign(960,84,500,56,'掛 號 櫃 檯　REGISTRATION',26,'#2a9d8f','#fff')}
+ <g id="win1"><g class="open"><rect class="glow" x="1066" y="234" width="118" height="92" rx="20" fill="#ffd23f" opacity="0"/><path d="M1080 314V262Q1080 246 1096 246H1154Q1170 246 1170 262V314Z" fill="#41506b" ${sw()}/><path d="M1088 314V266Q1088 254 1100 254H1150Q1162 254 1162 266V314" fill="none" stroke="#8aa" stroke-width="3"/><text x="1125" y="290" text-anchor="middle" font-size="14" font-weight="800" fill="#ffd23f">收件</text></g></g>
+ <rect x="845" y="312" width="730" height="26" rx="6" fill="#8c5a3c" ${sw()}/>
+ <rect x="860" y="338" width="700" height="444" fill="#c98b5a" ${sw()}/>
+ <path d="M880 360h660v400h-660Z" fill="none" stroke="#a46d43" stroke-width="5"/><path d="M1100 360v400M1320 360v400" stroke="#a46d43" stroke-width="5"/>
+ ${sign(900,520,190,90,'身高未達窗口者|請自行努力',18,'#fff')}${sign(1350,520,170,90,'掛號費|誠意即可',18,'#fff8c4',3)}
+ <g transform="translate(686 782)">${patient({arm:'none',mood:'o'})}</g>
+ ${armRig(1)}`)}
+function bg2(){return svg(room('#e3e4f6','#c3c6ea')+`
+ <rect x="652" y="146" width="336" height="50" rx="10" fill="#50577a" ${sw()}/><text x="790" y="180" text-anchor="middle" font-size="24" font-weight="900" fill="#fff">電腦斷層 CT</text><circle id="ctlamp" cx="958" cy="171" r="13" ${sw(3)}/>
+ <circle cx="820" cy="470" r="122" fill="#2d3250"/><circle cx="820" cy="470" r="96" fill="none" stroke="#3f4775" stroke-width="10"/>
+ <rect x="400" y="548" width="110" height="200" fill="#cfd4e6" ${sw()}/><rect x="350" y="742" width="210" height="40" rx="8" fill="#b3bad3" ${sw()}/>
+ <g id="bedpt"><rect x="230" y="528" width="700" height="22" rx="10" fill="#e8ebf5" ${sw()}/><g id="ctpt"><g transform="translate(420 528) scale(-1 1)">${lying({mood:'o'})}</g></g></g>
+ <defs><clipPath id="hole"><circle cx="820" cy="470" r="118"/></clipPath></defs>
+ <g clip-path="url(#hole)"><g transform="translate(820 0)"><g id="scanbar"><rect x="-6" y="340" width="12" height="260" fill="#52ffb8" opacity=".85"/><rect x="-22" y="340" width="44" height="260" fill="#52ffb8" opacity=".25"/></g></g></g>
+ <path fill-rule="evenodd" fill="#f4f6fb" ${sw()} d="M700 210H940Q1000 210 1000 270V670Q1000 730 940 730H700Q640 730 640 670V270Q640 210 700 210ZM698 470a122 122 0 1 0 244 0a122 122 0 1 0 -244 0Z"/>
+ <g transform="translate(820 470)"><g class="spin"><circle r="150" fill="none" stroke="#9aa3c7" stroke-width="8" stroke-dasharray="30 20"/></g></g>
+ <rect x="670" y="660" width="300" height="44" rx="8" fill="#dde2f0" ${sw(3)}/><text x="820" y="690" text-anchor="middle" font-size="16" font-weight="800" fill="${OL}">本儀器只掃文件，不掃心事</text>
+ <!-- 反應：high 暈倒 / medium 輪椅 / low 呼～ -->
+ <g data-show="high" hidden><g transform="translate(360 782)">${lying({mood:'ko'})}</g>
+  <g transform="translate(210 728)"><g class="stars">${[0,120,240].map(a=>`<g transform="rotate(${a}) translate(58 0)"><path d="M0 -14L4 -4L14 -4L6 3L9 13L0 7L-9 13L-6 3L-14 -4L-4 -4Z" fill="#ffd23f" ${sw(2)}/></g>`).join('')}</g></g>
+  <g class="runin"><g transform="translate(96 782)"><g class="bob">${nurse('run','worry')}</g></g></g></g>
+ <g data-show="medium" hidden><g class="rollin"><g transform="translate(380 782)">
+  <circle cx="0" cy="-58" r="58" fill="none" ${sw(9)}/><circle cx="0" cy="-58" r="50" fill="none" stroke="#8d99ae" stroke-width="4"/><path d="M-50 -58h100M0 -108v100M-35 -93l70 70M35 -93l-70 70" stroke="#8d99ae" stroke-width="3"/>
+  <circle cx="96" cy="-14" r="14" fill="#fff" ${sw()}/><path d="M-34 -176L-22 -84H84L96 -16" fill="none" stroke="#8d99ae" stroke-width="9"/><path d="M-34 -176h-34" ${sw(9)}/>
+  <rect x="-30" y="-98" width="112" height="16" rx="4" fill="#3d405b" ${sw()}/><rect x="-40" y="-178" width="16" height="96" rx="4" fill="#3d405b" ${sw()}/>
+  <path d="M20 -92h60" stroke="${OL}" stroke-width="25"/><path d="M20 -92h60" stroke="${SK}" stroke-width="17"/><path d="M80 -92L84 -34" stroke="${OL}" stroke-width="25"/><path d="M80 -92L84 -34" stroke="${SK}" stroke-width="17"/><ellipse cx="96" cy="-26" rx="18" ry="8" fill="#6b4f3a" ${sw()}/>
+  <path d="M-16 -90L-10 -170Q14 -180 38 -170L44 -90Z" fill="${GOWN}" ${sw()}/>${limb('M34 -160Q56 -130 60 -110',SK)}${hand(60,-106)}
+  ${head(14,-210,40,{hair:HAIR.pt(40),mood:'worry'})}
+  <g transform="translate(-150 0)">${nurse('push','smile')}</g></g></g></g>
+ <g data-show="low" hidden><g transform="translate(170 782)">${patient({mood:'relief'})}</g>
+  <g transform="translate(170 430)"><g class="puff"><g fill="#fff" ${sw(4)}><circle cx="-40" cy="6" r="34"/><circle cx="6" cy="-14" r="44"/><circle cx="54" cy="4" r="36"/><circle cx="8" cy="20" r="30"/></g><text x="8" y="14" text-anchor="middle" font-size="36" font-weight="900" fill="${OL}">呼～</text></g></g><g transform="translate(186 500)"><circle cx="0" cy="0" r="8" fill="#fff" ${sw(3)}/><circle cx="-6" cy="26" r="5" fill="#fff" ${sw(3)}/></g></g>`)}
+function bg3(){return svg(room('#f6efdc','#e3d3a8',[[1250,110,290,220]])+`
+ ${sign(70,96,300,110,'洗手五時機|每次存檔前也算',18,'#fff')}
+ <g transform="translate(250 782)">${doctor('point','smile')}</g>
+ <g transform="translate(1390 782) scale(-1 1)">${nurse('note','smile')}</g>`)}
+function bg4(){
+ const bed=`<rect x="330" y="600" width="600" height="30" rx="12" fill="#fff" ${sw()}/><rect x="330" y="630" width="600" height="20" fill="#8d99ae" ${sw()}/><path d="M360 650v110M900 650v110" ${sw(10)}/><circle cx="360" cy="764" r="12" fill="#555" ${sw(3)}/><circle cx="900" cy="764" r="12" fill="#555" ${sw(3)}/><rect x="318" y="540" width="16" height="110" rx="6" fill="#8d99ae" ${sw()}/>`;
+ return svg(room('#dff1f1','#b7e0dd')+`
+ <path d="M630 66v60" ${sw(6)}/><path d="M540 126h180l-30 54h-120Z" fill="#e8ebf5" ${sw()}/><ellipse cx="630" cy="180" rx="60" ry="10" fill="#fff6c4" ${sw(3)}/>
+ ${sign(70,96,250,110,'手術室|保持安靜·請勿點外送',17,'#fff')}
+ <!-- 心電圖監視器 --><g transform="translate(960 250)"><rect width="140" height="104" rx="10" fill="#222" ${sw()}/><rect x="10" y="10" width="120" height="74" rx="4" fill="#0b2e1f"/>
+  <g data-show="high-work" hidden><path d="M12 50H50l4 -8 4 8H100l3 -14 3 14H128" fill="none" stroke="#52ff8a" stroke-width="3"/></g>
+  <g data-show="high-done medium-work medium-done low-work low-done high-idle medium-idle low-idle" hidden><path d="M12 52H26l4 -6 4 6H42l4 12 6 -40 6 40 4 -12H74l4 -6 4 6H90l4 12 6 -40 6 40 4 -12H128" fill="none" stroke="#52ff8a" stroke-width="3"/></g>
+  <rect class="wipe" x="10" y="10" width="18" height="74" fill="#0b2e1f"/><circle cx="20" cy="94" r="5" fill="#ff3b3b"/><path d="M70 104v180" ${sw(8)}/><path d="M30 284h80" ${sw(8)}/></g>
+ <!-- high：心肺復甦 -->
+ <g data-show="high-work" hidden>
+  <g transform="translate(110 782)"><rect x="-60" y="-150" width="130" height="90" rx="8" fill="#ffd23f" ${sw()}/><text x="5" y="-110" text-anchor="middle" font-size="18" font-weight="900" fill="${OL}">電擊器</text><rect x="-30" y="-96" width="70" height="20" rx="4" fill="#222"/><rect x="-60" y="-60" width="130" height="60" fill="#8d99ae" ${sw()}/></g>
+  <path d="M150 680Q240 720 300 630Q330 590 446 600" fill="none" stroke="#333" stroke-width="4"/>
+  <g transform="translate(580 742)">${doctor('cpr','grit')}</g><rect x="530" y="742" width="100" height="40" rx="6" fill="#e9c46a" ${sw()}/>${bed}
+  <g transform="translate(640 600)"><g class="chest">${lying({mood:'ko'})}</g></g><g transform="translate(580 742)"><g class="cpr">${hand(-4,-200)}${hand(10,-198)}</g></g>
+  <g transform="translate(340 782)">${nurse('paddles','worry')}</g>
+  <g class="zap"><path d="M480 470l30 30-18 6 34 40-12-36 20-4-30-40Z" fill="#ffe14d" ${sw(3)}/></g>
+  <g class="pulse"><text x="430" y="330" text-anchor="middle" font-size="64" font-weight="900" fill="#d62828" stroke="#fff" stroke-width="3" paint-order="stroke">CPR!</text></g>
+  <text class="beep" x="1030" y="236" text-anchor="middle" font-size="30" font-weight="900" fill="#d62828">嗶—嗶—</text></g>
+ <g data-show="high-done" hidden><g transform="translate(850 782)">${doctor('relax','relief')}</g>${bed}
+  <g transform="translate(600 600)">${sitting({mood:'o',wave:true})}</g><g transform="translate(250 782)">${nurse('stand','joy')}</g></g>
+ <!-- medium：截肢（卡通） -->
+ <g data-show="medium-work" hidden><g transform="translate(740 742)">${doctor('scissors','grit')}</g><rect x="690" y="742" width="100" height="40" rx="6" fill="#e9c46a" ${sw()}/>${bed}
+  <g transform="translate(640 600)">${lying({mood:'worry',noLeg:true})}</g>
+  <g transform="translate(760 560)"><g class="cloud"><g fill="#f1f3f8" ${sw()}><circle cx="-70" cy="10" r="46"/><circle cx="-10" cy="-30" r="56"/><circle cx="60" cy="0" r="50"/><circle cx="10" cy="34" r="44"/><circle cx="80" cy="44" r="30"/></g>
+   <path d="M-40 -10l10 10M20 20l14 -6M50 -30l8 12" ${sw(4)}/><path d="M-20 30l6-12 6 12 12 2-10 8 3 12-11-6-11 6 3-12-10-8Z" fill="#ffd23f" ${sw(2)}/></g></g>
+  <g transform="translate(760 570)"><g class="legfly"><g transform="rotate(-10)"><rect x="-50" y="-9" width="100" height="17" rx="8" fill="${SK}" ${sw()}/><rect x="-56" y="-12" width="18" height="23" rx="6" fill="#fff" ${sw(3)}/><ellipse cx="54" cy="-12" rx="9" ry="17" fill="#6b4f3a" ${sw()}/></g></g></g>
+  <g class="whoosh"><text x="820" y="440" font-size="46" font-weight="900" fill="#3a86ff" stroke="#fff" stroke-width="3" paint-order="stroke">咻！</text><path d="M800 470h-70M810 490h-90M800 510h-60" stroke="#3a86ff" stroke-width="5"/></g>
+  <g transform="translate(220 782)">${nurse('note','worry')}</g></g>
+ <g data-show="medium-done" hidden><g transform="translate(850 782)">${doctor('relax','smile')}</g>${bed}
+  <g transform="translate(600 600)">${sitting({mood:'joy',stump:true,wave:true})}</g>
+  <g transform="translate(286 782)"><path d="M0 0L30 -230M22 0L52 -230" stroke="#8d99ae" stroke-width="8"/><path d="M20 -232h44M8 -130h40" ${sw(8)}/></g>
+  <g transform="translate(190 782)">${nurse('stand','smile')}</g></g>
+ <!-- low：屁股打一針 -->
+ <g data-show="low-work" hidden><g transform="translate(200 782)">${doctor('cross','smile')}</g>${bed}
+  <g transform="translate(640 600)"><g class="hop">${lying({prone:true,faces:`<g class="calm">${head(-150,-50,40,{hair:HAIR.pt(40),mood:'worry'})}</g><g class="grit">${head(-150,-50,40,{hair:HAIR.pt(40),mood:'grit'})}</g>`})}</g></g>
+  <g class="jab"><g transform="translate(890 782) scale(-1 1)">${nurse('syringe','smile')}</g></g>
+  <g transform="translate(560 420)"><g class="ouch"><path d="M-70 -40L-40 -60L-20 -90L10 -62L50 -80L44 -40L80 -20L40 0L50 40L10 20L-20 50L-30 10L-80 10L-50 -14Z" fill="#ffd23f" ${sw()}/><text x="0" y="-4" text-anchor="middle" font-size="40" font-weight="900" fill="#d62828">噢！</text></g></g></g>
+ <g data-show="low-done" hidden><g transform="translate(200 782)">${doctor('stand','joy')}</g>${bed}
+  <g transform="translate(640 600)">${lying({prone:true,aid:true,mood:'relief'})}</g><g transform="translate(890 782) scale(-1 1)">${nurse('stand','smile')}</g></g>
+ <g data-show="high-idle medium-idle low-idle" hidden><g transform="translate(560 782)">${doctor('stand','smile')}</g>${bed}<g transform="translate(640 600)">${lying({mood:'worry'})}</g></g>`)}
+function bg5(){return svg(room('#f7f1d0','#e6d58f',[[70,110,290,240]])+`
+ <rect x="470" y="660" width="520" height="122" fill="#9aa3b5" ${sw()}/><path d="M490 690h480M490 730h480" stroke="#7d8597" stroke-width="4"/>
+ <g id="printer"><rect x="480" y="450" width="500" height="210" rx="22" fill="#e8ebf5" ${sw()}/><rect x="540" y="444" width="370" height="20" rx="6" fill="#222" ${sw()}/>
+  <rect x="520" y="500" width="150" height="56" rx="8" fill="#1b2a1f" ${sw(3)}/><text id="plcd" x="595" y="537" text-anchor="middle" font-size="22" fill="#7CFC9A">待機</text>
+  <circle id="pled" cx="900" cy="520" r="12" fill="#999" ${sw(3)}/><rect x="760" y="580" width="180" height="40" rx="8" fill="#cfd4e6" ${sw(3)}/><text x="850" y="607" text-anchor="middle" font-size="18" font-weight="800" fill="${OL}">處方專用機</text></g>
+ <g transform="translate(330 782)">${nurse('stand','smile')}</g>`)}
+function bg6(){return svg(room('#fbe3d4','#f2b89a')+`
+ ${sign(1140,90,370,58,'收 費 處　CASHIER',26,'#e76f51','#fff')}
+ <g transform="translate(1430 640)">${nurse('stand','smile',{top:'#f4a261',pants:'#e76f51',cap:false,hair:HAIR.short,skin:'#c68642',extra:`<path d="M-44 -30Q0 -56 44 -30L60 -24H-60Z" fill="#2a9d8f" ${sw(3)}/>`})}</g>
+ <rect x="1070" y="160" width="490" height="322" fill="#cdeaf2" opacity=".45"/><rect x="1070" y="160" width="490" height="322" fill="none" stroke="#a7b4bb" stroke-width="12"/><path d="M1315 160v322" stroke="#a7b4bb" stroke-width="8"/>
+ <g fill="#7d8d90">${[0,1,2].map(i=>[0,1,2].map(j=>`<circle cx="${1170+i*16}" cy="${300+j*16}" r="4"/>`).join('')).join('')}</g>
+ ${sign(1092,180,190,64,'本院接受：信用卡|悠遊卡、誠意',16,'#fff8c4')}${sign(1344,180,190,64,'找零請當面點清|離櫃恕不負責',16,'#fff')}
+ <g id="win6"><g class="open"><rect class="glow" x="1186" y="414" width="160" height="80" rx="20" fill="#ffd23f" opacity="0"/><path d="M1206 482V448Q1206 432 1222 432H1310Q1326 432 1326 448V482Z" fill="#5a6b80" ${sw()}/><text x="1266" y="466" text-anchor="middle" font-size="15" font-weight="800" fill="#ffd23f">投幣盤</text></g></g>
+ <rect x="1050" y="478" width="530" height="24" rx="6" fill="#b5654a" ${sw()}/><ellipse cx="1266" cy="490" rx="74" ry="9" fill="#7a3e2c"/>
+ <rect x="1060" y="502" width="510" height="280" fill="#f4d6c4" ${sw()}/><path d="M1060 560h510M1060 700h510" stroke="#e5b49a" stroke-width="8"/>
+ ${sign(1150,590,240,80,'請把待修版|放在投幣盤上',18,'#fff')}
+ <!-- POS 立架 --><rect x="690" y="760" width="54" height="22" fill="#555" ${sw()}/><rect x="626" y="770" width="182" height="14" rx="6" fill="#444" ${sw()}/>
+ <g transform="translate(940 782)">${patient({arm:'none',mood:'smile',cont:true})}</g>
+ ${armRig(6)}`)}
+function bg7(){
+ let shelves='';const cols=['#e76f51','#2a9d8f','#e9c46a','#8ecae6','#f4a261','#b5838d','#90be6d'];
+ for(let r=0;r<3;r++){shelves+=`<rect x="900" y="${150+r*110}" width="640" height="12" fill="#8c5a3c" ${sw(3)}/>`;for(let i=0;i<11;i++){const c=cols[(i*3+r*2)%7],x=916+i*56,h=40+((i*7+r*5)%4)*12;shelves+=i%2?`<rect x="${x}" y="${150+r*110-h}" width="38" height="${h}" rx="6" fill="${c}" ${sw(3)}/><rect x="${x+8}" y="${150+r*110-h-12}" width="22" height="14" rx="3" fill="#fff" ${sw(3)}/>`:`<rect x="${x}" y="${150+r*110-h}" width="44" height="${h}" rx="3" fill="${c}" ${sw(3)}/><rect x="${x+6}" y="${150+r*110-h+10}" width="32" height="14" fill="#fff"/>`}}
+ return svg(room('#e2f4dc','#b8dfa9')+shelves+`
+  <g transform="translate(1250 650) scale(-1 1)">${nurse('give','smile',{top:'#fff',pants:'#3d405b',apron:'#90be6d',cap:false,hair:HAIR.short,skin:'#e0ac69',extra:GLASSES(42)})}</g>
+ <g class="phArm"><g transform="translate(0 0)">${limb('M1090 470H1214','#fff',14)}${hand(1086,470,'#e0ac69')}</g></g>
+ <rect x="850" y="508" width="730" height="26" rx="6" fill="#5c8a4a" ${sw()}/><rect x="860" y="534" width="710" height="248" fill="#f6fbf2" ${sw()}/><path d="M860 600h710" stroke="#d5e8c9" stroke-width="10"/>
+ ${sign(1110,560,420,58,'領 藥 處　PHARMACY',26,'#2a9d8f','#fff')}${sign(1300,660,230,80,'藥袋請勿折疊|請勿與論文混用',17,'#fff')}
+ <g transform="translate(720 782)">${patient({arm:'up',mood:'joy',cont:true})}</g>`)}
+
+/* ============ 遠景（視差 0.35x）與近景（1.25x） ============ */
+function farSVG(){
+ const Wd=5200;let s=`<svg width="${Wd}" height="900" viewBox="0 0 ${Wd} 900" aria-hidden="true"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cc8f8"/><stop offset="1" stop-color="#e6f7ff"/></linearGradient></defs><rect width="${Wd}" height="900" fill="url(#sky)"/>`;
+ let r=7;const rnd=()=>(r=(r*9301+49297)%233280)/233280;
+ for(let x=40;x<Wd;x+=300+rnd()*200){const y=130+rnd()*80;s+=`<g fill="#fff"><ellipse cx="${x}" cy="${y}" rx="58" ry="20"/><ellipse cx="${x+36}" cy="${y-14}" rx="36" ry="22"/><ellipse cx="${x-30}" cy="${y-6}" rx="28" ry="16"/></g>`}
+ for(let x=-20;x<Wd;){const w=80+rnd()*120,top=210+rnd()*130,c=['#8fb3d6','#7ea4c9','#a3c1df'][Math.floor(rnd()*3)];
+  s+=`<rect x="${x}" y="${top}" width="${w}" height="${900-top}" fill="${c}"/>`;
+  for(let wy=top+16;wy<520;wy+=30)for(let wx=x+12;wx<x+w-16;wx+=26)s+=`<rect x="${wx}" y="${wy}" width="12" height="14" fill="#dff1ff" opacity=".7"/>`;
+  x+=w+6+rnd()*20}
+ return s+'</svg>'}
+function nearSVG(){
+ const items=[
+  `<rect x="20" y="560" width="110" height="130" rx="10" fill="#7a4b2a" ${sw()}/><g fill="#2f6d3a" ${sw()}><ellipse cx="40" cy="480" rx="40" ry="90" transform="rotate(-20 40 480)"/><ellipse cx="110" cy="470" rx="40" ry="100" transform="rotate(22 110 470)"/><ellipse cx="75" cy="430" rx="36" ry="120"/></g>`,
+  `<path d="M70 300V860" ${sw(10)}/><path d="M20 860h100" ${sw(10)}/><rect x="40" y="300" width="60" height="90" rx="20" fill="#cfefff" ${sw()}/><path d="M70 390v100" stroke="#888" stroke-width="4"/>`,
+  `<rect x="10" y="0" width="140" height="900" fill="#5b6478" ${sw()}/><rect x="0" y="0" width="160" height="40" fill="#4a5266" ${sw()}/><rect x="0" y="800" width="160" height="100" fill="#4a5266" ${sw()}/>`,
+  `<path d="M30 860L80 560L130 860" fill="#ffd23f" ${sw()}/><text x="80" y="760" text-anchor="middle" font-size="22" font-weight="900" fill="${OL}">小心</text><text x="80" y="790" text-anchor="middle" font-size="22" font-weight="900" fill="${OL}">地滑</text>`,
+  `<rect x="30" y="520" width="100" height="340" rx="10" fill="#e8ebf5" ${sw()}/><rect x="40" y="430" width="80" height="96" rx="30" fill="#9bd3f5" ${sw()}/><rect x="60" y="640" width="40" height="20" fill="#3a86ff" ${sw(3)}/>`,
+  `<rect x="10" y="0" width="140" height="900" fill="#5b6478" ${sw()}/><rect x="0" y="0" width="160" height="40" fill="#4a5266" ${sw()}/><rect x="0" y="800" width="160" height="100" fill="#4a5266" ${sw()}/>`];
+ return `<svg width="14000" height="900" viewBox="0 0 14000 900" aria-hidden="true">`+items.map((it,k)=>`<g transform="translate(${2000*k+1800} 0)">${it}</g>`).join('')+'</svg>'}
+
+/* ============ HUD 進度條（不可點擊跳步） ============ */
+const STEPS=[['掛號','<path d="M4 7h16v10H4z M9 7v10" fill="none" stroke="currentColor" stroke-width="2.4"/>'],['檢測','<circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/>'],['醫囑','<rect x="5" y="4" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M9 3h6v4H9z M8 12h8M8 16h6" fill="none" stroke="currentColor" stroke-width="2"/>'],['治療','<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z" fill="currentColor"/>'],['處方','<rect x="5" y="9" width="14" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M8 9V3h8v6M8 14h8v7H8z" fill="none" stroke="currentColor" stroke-width="2"/>'],['繳費','<rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M3 10h18" stroke="currentColor" stroke-width="3"/>'],['領藥','<rect x="4" y="9" width="16" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="2.4" transform="rotate(-35 12 12.5)"/><path d="M9.5 9.5l5 6" stroke="currentColor" stroke-width="2"/>']];
+function hud(n){$('steps').innerHTML=STEPS.map(([t,ic],i)=>`<li class="${i+1===n?'on':i+1<n?'done':''}" ${i+1===n?'aria-current="step"':''}><svg viewBox="0 0 24 24">${ic}</svg>${t}<span class="ck">✓</span></li>`).join('')}
+
+/* ============ 鏡頭（橫向捲軸） ============ */
+const LAYERS=[['far',.35],['strip',1],['near',1.25]];
+function cam(pos,instant){
+ for(const [id,f] of LAYERS){const el=$(id);if(instant||RM)el.style.transition='none';el.style.transform=`translateX(${-(pos-1)*W*f}px)`;if(instant||RM){void el.offsetWidth;el.style.transition=''}}
+ document.querySelectorAll('.scene').forEach((s,i)=>s.inert=Math.round(pos)!==i+1)}
+async function go(n){const t=TOKEN;S.step=n;hud(n);cam(n);await sleep(PAN);if(t!==TOKEN)return;enter(n)}
+function enter(n){({2:playCT,3:enter3,4:doClean,5:doReview,6:enter6,7:enter7})[n]?.()}
+function fit(){document.documentElement.style.setProperty('--k',Math.min(innerWidth/1600,innerHeight/900))}
+function toStage(cx,cy){const r=$('stage').getBoundingClientRect(),k=r.width/1600;return {x:(cx-r.left)/k,y:(cy-r.top)/k}}
+
+/* ============ 廣播條／彈窗 ============ */
+function cast(msg){$('castT').textContent=msg||'';$('cast').hidden=!msg}
+function dlg(title,html){$('dlgT').textContent=title;$('dlgB').innerHTML=html;$('dlg').showModal()}
+function ftable(a){if(!a||!a.length)return '<p class="ok"><b>未發現痕跡</b></p>';
+ return '<table><tr><th>嚴重度</th><th>層</th><th>項目</th><th>位置</th><th>說明</th></tr>'+a.map(f=>`<tr><td class="sev-${esc(f.severity)}">${esc(RISK_TX[f.severity]||f.severity)}</td><td>${esc(f.layer)}</td><td>${esc(f.code)}</td><td>${esc(f.where)}</td><td>${esc(f.detail)}</td></tr>`).join('')+'</table>'}
+function cleanDetails(j,title){
+ const sl=Object.entries(j.style_log||{});
+ dlg(title,`<h3>複掃結果（${(j.after||[]).length} 項）</h3>${ftable(j.after)}
+ <h3>與原檔格式比對</h3>${(j.diffs||[]).length?'<ul>'+j.diffs.map(d=>`<li>${esc(d)}</li>`).join('')+'</ul>':'<p class="ok"><b>段落／樣式／表格／圖片一致</b></p>'}
+ <h3>風格層變更</h3>${sl.length?'<table><tr><th>群組</th><th>次數</th><th>範例</th></tr>'+sl.map(([g,v])=>`<tr><td>${esc(g)}</td><td>${esc(v.count)}</td><td>${esc((v.examples||[]).join('；'))}</td></tr>`).join('')+'</table>':'<p class="mut">未啟用或無變更</p>'}
+ ${j.removed_comments!=null?`<h3>工具註解</h3><p>已移除 ${esc(j.removed_comments)} 則</p>`:''}
+ <h3>已丟棄部件</h3><p>${esc((j.dropped||[]).join('、')||'無')}</p>`)}
+
+/* ============ S1 / S6：手臂跟著拖曳游標 ============ */
+const ARM={1:{sh:[700,676],win:[1125,284],rest:[714,726]},6:{sh:[954,676],win:[1266,462],rest:[968,726]}};
+const HP={1:{x:714,y:726},6:{x:968,y:726}};
+function armDraw(n,x,y,hold){
+ const a=ARM[n],[sx,sy]=a.sh,dist=Math.hypot(x-sx,y-sy);
+ const d=`M${sx} ${sy}Q${(sx+x)/2} ${Math.max(sy,y)+Math.min(70,dist*.3)} ${x} ${y}`;
+ $('arm'+n).querySelectorAll('path').forEach(p=>p.setAttribute('d',d));
+ $('hand'+n).setAttribute('transform',`translate(${x} ${y})`);
+ $('doc'+n).style.display=hold?'':'none';HP[n]={x,y};
+ const wd=Math.hypot(x-a.win[0],y-a.win[1]),w=$('win'+n);
+ w.classList.toggle('near',!!hold&&wd<300);w.classList.toggle('open',!!hold&&wd<140)}
+function tween(n,to,ms,hold){return new Promise(res=>{const from={...HP[n]},t0=performance.now(),D=T(ms);
+ const f=now=>{const p=D?Math.min(1,(now-t0)/D):1,e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;armDraw(n,from.x+(to.x-from.x)*e,from.y+(to.y-from.y)*e,hold);p<1?requestAnimationFrame(f):res()};requestAnimationFrame(f)})}
+let follow=null,dragT=null;
+function followLoop(){if(!follow)return;const p=HP[follow.n],k=RM?1:.3;armDraw(follow.n,p.x+(follow.x-p.x)*k,p.y+(follow.y-p.y)*k,true);requestAnimationFrame(followLoop)}
+function dropScene(){if(S.busy)return 0;if(S.step===1)return 1;if(S.step===6&&!S.paid&&!S.skip)return 6;return 0}
+function armRest(n){const r=ARM[n].rest;armDraw(n,r[0],r[1],false);$('doc'+n).classList.remove('gone')}
+function dragEnd(n){follow=null;tween(n,{x:ARM[n].rest[0],y:ARM[n].rest[1]},350,false)}
+addEventListener('dragenter',e=>e.preventDefault());
+addEventListener('dragover',e=>{e.preventDefault();const n=dropScene();
+ if(!n){e.dataTransfer.dropEffect='none';return}e.dataTransfer.dropEffect='copy';
+ const p=toStage(e.clientX,e.clientY);p.x=Math.max(40,Math.min(1560,p.x));p.y=Math.max(90,Math.min(850,p.y));
+ if(!follow){follow={n,...p};$('doc'+n).classList.remove('gone');$('rej'+n).hidden=true;requestAnimationFrame(followLoop)}else Object.assign(follow,p);
+ clearTimeout(dragT);dragT=setTimeout(()=>dragEnd(n),700)});
+addEventListener('drop',e=>{e.preventDefault();clearTimeout(dragT);const n=dropScene();if(!n){follow=null;return}
+ const f=e.dataTransfer.files&&e.dataTransfer.files[0];follow=null;if(!f){dragEnd(n);return}deliver(n,f)});
+/* 遞件：手把文件送進窗口 → 收件章 → 上傳（S1）或交付（S6）。非 .docx 顯示拒收告示 */
+async function deliver(n,f){
+ if(S.busy)return;S.busy=true;const t=TOKEN;cast('');
+ const a=ARM[n];$('doc'+n).classList.remove('gone');
+ await tween(n,{x:a.win[0]-10,y:a.win[1]+12},500,true);if(t!==TOKEN)return;
+ if(!/\.docx$/i.test(f.name)){
+  const r=$('rej'+n);$('rej'+n+'n').textContent='（收到的是：'+f.name+'）';r.hidden=true;void r.offsetWidth;r.hidden=false;
+  await tween(n,{x:a.rest[0],y:a.rest[1]},500,false);S.busy=false;setTimeout(()=>{if(!follow)r.hidden=true},4000);return}
+ $('rej'+n).hidden=true;$('doc'+n).classList.add('gone');$('stamp'+(n===1?'1w':'6')).classList.add('show');await sleep(400);if(t!==TOKEN)return;
+ tween(n,{x:a.rest[0],y:a.rest[1]},450,false);
+ S.busy=false;n===1?upload(f):submit6(f)}
+function pick(n){if(dropScene()!==n)return;const fi=$('fileIn');fi.dataset.n=n;fi.value='';fi.click()}
+$('fileIn').onchange=e=>{const f=e.target.files[0],n=+e.target.dataset.n;e.target.value='';if(f&&dropScene()===n){armDraw(n,ARM[n].rest[0],ARM[n].rest[1],true);deliver(n,f)}};
+
+/* ============ S1 上傳 ============ */
+function reset1(){armRest(1);$('slipName').textContent='（尚未收件）';$('slipStat').textContent='待收件';$('stamp1').classList.remove('show');$('stamp1w').classList.remove('show');$('rej1').hidden=true;$('lampNo').textContent='0042';$('lampTx').textContent='請掛號';$('lamp').classList.remove('busy');$('clerkSay').textContent='下一位～（打哈欠）'}
+async function upload(f){
+ const t=TOKEN;S.busy=true;$('slipName').textContent=f.name;$('slipStat').textContent='收件中…';$('stamp1w').classList.add('show');
+ $('lamp').classList.add('busy');$('lampNo').textContent='0042';$('lampTx').textContent='處理中';$('clerkSay').textContent='收到，送檢！';
+ try{
+  const r=await api('/api/upload?name='+enc(f.name),f);if(t!==TOKEN)return;
+  setInfo(r);$('slipName').textContent=r.name;$('slipStat').textContent='已收件，請至檢測室';$('stamp1').classList.add('show');
+  $('lamp').classList.remove('busy');$('lampTx').textContent='請進';await sleep(900);if(t!==TOKEN)return;S.busy=false;go(2)
+ }catch(e){if(t!==TOKEN)return;S.busy=false;$('lamp').classList.remove('busy');$('lampTx').textContent='退件';$('slipStat').textContent='退件，請重新遞交';$('stamp1w').classList.remove('show');$('clerkSay').textContent='這份我收不了…';cast('上傳失敗：'+e.message)}}
+function setInfo(r){S.info=r;S.jid=r.id;S.risk=(r.risk&&r.risk.level)||'low';
+ $('stage').classList.remove('rk-high','rk-medium','rk-low');$('stage').classList.add('rk-'+S.risk);
+ $('oStyle').checked=false;$('oKeep').checked=false;$('oAuthor').value=r.defaults?.author||'';$('oCompany').value=r.defaults?.company||''}
+
+/* ============ S2 檢測 ============ */
+function showSet(scene,key){$(scene).querySelectorAll('[data-show]').forEach(g=>g.toggleAttribute('hidden',!g.dataset.show.split(' ').includes(key)))}
+function reset2(){const sc=$('sc2');sc.dataset.st='idle';showSet('sc2','');$('ctLines').innerHTML='';$('ctBtns').hidden=true;$('ctCap').hidden=true;$('ctNote').hidden=false}
+async function playCT(){
+ const t=TOKEN,sc=$('sc2'),r=S.info;reset2();
+ const cnt={high:0,medium:0,low:0};(r.findings||[]).forEach(f=>{if(f.severity in cnt)cnt[f.severity]++});
+ const cats=r.categories||[],tot=cats.reduce((s,c)=>s+(+c.count||0),0),tx=r.risk?.text||{};
+ const L=[`<div>受檢檔案：<b id="ctName"></b></div>`,
+  `<div>檔案層痕跡</div><div class="sev3"><span style="background:#ff8787">高 ${cnt.high}</span><span style="background:#ffd166">中 ${cnt.medium}</span><span style="background:#c9d1e0">低 ${cnt.low}</span></div>`,
+  `<div>文字層可疑部位：<b>${tot}</b> 處<span style="color:#9fb3d1">（高 ${+tx['高']||0}／中 ${+tx['中']||0}／低 ${+tx['低']||0}）</span></div>`,
+  `<div>前三名類別</div>`+(cats.length?'<ol>'+cats.slice(0,3).map(c=>`<li>[${esc(c.conf)}] ${esc(c.label)} × ${esc(c.count)}</li>`).join('')+'</ol>':'<div style="color:#6ee7b7">無可疑部位</div>'),
+  `<div>整體可疑度：<span class="lvl ${esc(S.risk)}">${RISK_TX[S.risk]}</span></div>`];
+ $('ctLines').innerHTML=L.map(h=>`<div class="ln">${h}</div>`).join('');$('ctName').textContent=r.name;
+ sc.dataset.st='in';await sleep(1200);if(t!==TOKEN)return;sc.dataset.st='scan';
+ const lns=$('ctLines').children;for(const el of lns){await sleep(520);if(t!==TOKEN)return;el.classList.add('show')}
+ await sleep(500);if(t!==TOKEN)return;sc.dataset.st='out';await sleep(1200);if(t!==TOKEN)return;
+ sc.dataset.st='react';showSet('sc2',S.risk);
+ const C={high:['可疑度：高','病人當場暈倒，護理師衝過來了。這代表有明顯痕跡要處理，不代表定罪。'],medium:['可疑度：中','病人需要先坐輪椅休息。有一些中度線索，值得處理。'],low:['可疑度：低','病人長出一口氣。痕跡不多，但仍建議走完流程。']}[S.risk];
+ $('ctNote').hidden=true;const cap=$('ctCap');cap.innerHTML='<span class="lvl '+esc(S.risk)+'"></span><small></small>';cap.firstChild.textContent=C[0];cap.lastChild.textContent=C[1];cap.hidden=false;
+ $('ctBtns').hidden=false}
+$('ctMore').onclick=()=>{const r=S.info;dlg('檢測詳情',`<p class="mut">以下為可疑度線索（啟發式），不是「是否為 AI」的判決。</p><h3>檔案層</h3>${ftable(r.findings)}
+ <h3>文字層可疑部位</h3>${(r.categories||[]).length?'<table><tr><th>信心</th><th>類型</th><th>數量</th><th>處理方式</th></tr>'+r.categories.map(c=>`<tr><td>${esc(c.conf)}</td><td>${esc(c.label)}</td><td>${esc(c.count)}</td><td>${c.auto?'可自動修':'需人工'}</td></tr>`).join('')+'</table>':'<p class="ok"><b>沒有可疑部位</b></p>'}
+ <p><a class="btn alt" target="_blank" rel="noopener" href="/report/${enc(S.jid)}">開啟完整報告</a></p>`)};
+$('ctNext').onclick=()=>{if(S.step===2)go(3)};
+
+/* ============ S3 醫囑 ============ */
+function enter3(){$('order').disabled=false}
+$('order').onclick=()=>{if(S.step!==3)return;S.style=$('oStyle').checked;S.keep=$('oKeep').checked;S.author=$('oAuthor').value.trim();S.company=$('oCompany').value.trim();$('order').disabled=true;go(4)};
+const qs=()=>`id=${enc(S.jid)}&style=${S.style?1:0}&keep_hidden=${S.keep?1:0}&author=${enc(S.author)}&company=${enc(S.company)}`;
+
+/* ============ S4 治療 ============ */
+function reset4(){const sc=$('sc4');sc.dataset.st='idle';sc.classList.remove('paused');showSet('sc4',S.risk+'-idle');$('opLamp').className='oplamp';$('opLamp').textContent='治療中';$('chartSt').textContent='準備治療…';$('chartSt').className='mut';
+ ['r1','r2','r3','r4'].forEach(id=>{const li=$(id);li.className='';li.querySelector('i').textContent='·';li.querySelector('span').textContent='—'});$('cBtns').hidden=true;$('cRetry').hidden=true;$('say4').hidden=true}
+async function doClean(){
+ const t=TOKEN,sc=$('sc4');reset4();cast('');sc.dataset.st='work';showSet('sc4',S.risk+'-work');$('opLamp').className='oplamp on';
+ $('chartSt').innerHTML='治療中，請稍候<span class="dots"></span><br><small>清理約需數秒到半分鐘</small>';
+ try{
+  const [j]=await Promise.all([api('/api/clean?'+qs()),sleep(3600)]);if(t!==TOKEN)return;
+  S.clean=j;sc.dataset.st='done';showSet('sc4',S.risk+'-done');$('opLamp').className='oplamp done';$('opLamp').textContent='治療完成';$('chartSt').textContent='治療完成，檢查結果如下：';
+  const say={high:'我…我還活著？',medium:'好像…輕了一點？',low:'就這樣？還好嘛…'}[S.risk],b=$('say4');b.textContent=say;b.style.left=(S.risk==='low'?360:520)+'px';b.style.top=(S.risk==='low'?420:330)+'px';b.hidden=false;
+  const after=j.after||[],high=after.filter(f=>f.severity==='high').length,diffs=j.diffs||[];
+  const rows=[[true,`完成，丟棄 ${(j.dropped||[]).length} 個部件`],
+   [true,`作者：${S.author||S.info.defaults?.author||'（預設）'}／公司：${S.company||S.info.defaults?.company||'（預設）'}`],
+   [!high,after.length?`剩 ${after.length} 項（其中高 ${high} 項）`:'未發現痕跡'],
+   [!diffs.length||S.style,diffs.length?(S.style?`文字差異 ${diffs.length} 項（已啟用風格層，屬預期）`:`差異 ${diffs.length} 項，請查看詳情`):'格式與原檔一致']];
+  for(let i=0;i<4;i++){await sleep(260);if(t!==TOKEN)return;const li=$('r'+(i+1));li.className='show '+(rows[i][0]?'ok':'wa');li.querySelector('i').textContent=rows[i][0]?'✓':'!';li.querySelector('span').textContent=rows[i][1]}
+  $('cBtns').hidden=false
+ }catch(e){if(t!==TOKEN)return;sc.dataset.st='fail';sc.classList.add('paused');$('opLamp').className='oplamp';$('opLamp').textContent='治療暫停';
+  $('chartSt').textContent='清理失敗：'+e.message;$('chartSt').className='hi';cast('清理失敗：'+e.message);$('cRetry').hidden=false}}
+$('cRetryB').onclick=()=>{if(S.step===4)doClean()};
+$('cMore').onclick=()=>cleanDetails(S.clean,'清理詳情');
+$('cNext').onclick=()=>{if(S.step===4)go(5)};
+
+/* ============ S5 處方（待修版） ============ */
+function reset5(){$('paper').className='';$('printer').classList.remove('shake');$('plcd').textContent='待機';$('pled').setAttribute('fill','#999');$('rvSt').innerHTML='處方列印中<span class="dots"></span>';$('rvSt').className='mut';$('rvBtns').hidden=true;$('rvNone').hidden=true;$('rvRetry').hidden=true;$('say5').hidden=true}
+async function doReview(){
+ const t=TOKEN;reset5();cast('');$('printer').classList.add('shake');$('plcd').textContent='列印中';$('pled').setAttribute('fill','#ffbe3d');
+ try{
+  const [r]=await Promise.all([api('/api/review?id='+enc(S.jid)+'&min_conf='+enc('中')),sleep(1200)]);if(t!==TOKEN)return;S.review=r;
+  $('pName').textContent=S.info.name.replace(/\.docx$/i,'')+'_待修版.docx';
+  $('pCnt').textContent=r.comments?`共 ${r.comments} 則註解／${r.paragraphs} 段`:'沒有需要人工處理的段落';
+  $('paper').classList.add('out');await sleep(2600);if(t!==TOKEN)return;
+  $('printer').classList.remove('shake');$('plcd').textContent='完成';$('pled').setAttribute('fill','#2ecc71');$('say5').hidden=false;
+  $('rvSt').textContent=r.comments?`待修版已產生：共 ${r.comments} 則註解，分布在 ${r.paragraphs} 段。`:'待修版已產生。';$('rvSt').className='';
+  $('rvNone').hidden=!!r.comments;$('rvDl').href='/download/'+enc(S.jid)+'/review';$('rvBtns').hidden=false
+ }catch(e){if(t!==TOKEN)return;$('printer').classList.remove('shake');$('plcd').textContent='卡紙';$('pled').setAttribute('fill','#ff3b3b');
+  $('rvSt').textContent='產生待修版失敗：'+e.message;$('rvSt').className='hi';cast('產生待修版失敗：'+e.message);$('rvRetry').hidden=false}}
+$('rvRetryB').onclick=()=>{if(S.step===5)doReview()};
+$('rvNext').onclick=()=>{if(S.step===5){S.skip=false;go(6)}};
+$('rvSkip').onclick=()=>{if(S.step===5){S.skip=true;go(6)}};
+
+/* ============ S6 繳費（POS） ============ */
+function posState(st,l1,l2){const p=$('pos');p.className='pos '+st;$('posL1').textContent=l1;$('posL2').textContent=l2;$('posOK').disabled=!(st==='ready'||st==='fail')}
+function reset6(){S.file6=null;S.paid=false;armRest(6);$('stamp6').classList.remove('show');$('rej6').hidden=true;$('s6Got').hidden=true;render6()}
+function render6(){$('s6Need').hidden=S.skip;$('s6Skip').hidden=!S.skip;$('hit6').disabled=S.skip;
+ if(S.skip)posState('ready','應付 NT$ 0','（全民健保）請按「確認」');
+ else if(S.file6)posState('ready','應付 NT$ 0','（全民健保）請按「確認」');
+ else posState('sleep','請先提交待修版','確認鍵暫停服務')}
+function enter6(){reset6()}
+function submit6(f){S.file6=f;const g=$('s6Got');g.textContent='已收件：'+f.name;g.hidden=false;$('stamp6').classList.add('show');render6();const p=$('pos');p.classList.remove('pop');void p.offsetWidth;p.classList.add('pop')}
+$('toSkip').onclick=()=>{if(S.step===6&&!S.busy){S.skip=true;S.file6=null;$('s6Got').hidden=true;$('stamp6').classList.remove('show');render6()}};
+$('toSub').onclick=()=>{if(S.step===6&&!S.busy){S.skip=false;render6()}};
+$('keys').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&b.id!=='posOK'&&!S.busy&&!S.paid){$('posL2').textContent='嗶！請按綠色「確認」鍵'}});
+$('posOK').onclick=async()=>{
+ if(S.step!==6||S.busy||S.paid||(!S.skip&&!S.file6))return;
+ const t=TOKEN;S.busy=true;cast('');posState('paying','處理中…','請勿拔卡');
+ try{
+  const [r]=await Promise.all([api('/api/final?'+qs(),S.skip?new Uint8Array(0):S.file6),sleep(1800)]);if(t!==TOKEN)return;
+  S.fin=r;S.paid=true;S.busy=false;posState('ready','付款成功','謝謝光臨，請至領藥處');$('posOK').disabled=true;
+  await sleep(1300);if(t!==TOKEN)return;go(7)
+ }catch(e){if(t!==TOKEN)return;S.busy=false;posState('fail','交易失敗','請按「確認」重試');cast('產生最終版失敗：'+e.message)}};
+$('hit6').onclick=()=>pick(6);$('pick6').onclick=()=>pick(6);
+
+/* ============ S7 領藥 ============ */
+function reset7(){$('bag').classList.remove('give');$('bag').style.visibility='hidden';document.querySelector('.phArm').classList.remove('give');$('say7').hidden=true;$('sumDl').innerHTML='';$('fDl').href='#'}
+async function enter7(){
+ const t=TOKEN,j=S.fin||{};reset7();
+ $('bagName').textContent=S.info.name.replace(/\.docx$/i,'')+'_clean.docx';
+ const after=j.after||[],high=after.filter(f=>f.severity==='high').length,diffs=j.diffs||[];
+ const rows=[['複掃結果',after.length?`剩 ${after.length} 項（其中高 ${high} 項）`:'未發現痕跡'],
+  ['格式比對',diffs.length?(S.style?`文字差異 ${diffs.length} 項（風格層，屬預期）`:`差異 ${diffs.length} 項，請查看詳情`):'與來源一致'],
+  ['工具註解',j.removed_comments?`已移除 ${j.removed_comments} 則註解`:'無需移除'],
+  ['作者',S.author||S.info.defaults?.author||'（預設）'],['公司',S.company||S.info.defaults?.company||'（預設）'],
+  ['複掃可疑度',RISK_TX[j.risk_after?.level]||'—']];
+ const dl=$('sumDl');rows.forEach(([k,v])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=k;dd.textContent=v;dl.append(dt,dd)});
+ $('fDl').href='/download/'+enc(S.jid)+'/final';
+ const b=$('bag');b.style.visibility='visible';b.classList.add('give');document.querySelector('.phArm').classList.add('give');
+ await sleep(1600);if(t!==TOKEN)return;$('say7').hidden=false}
+$('fMore').onclick=()=>cleanDetails(S.fin||{},'最終版詳情');
+$('again').onclick=()=>{TOKEN++;fresh();follow=null;cast('');if($('dlg').open)$('dlg').close();
+ $('stage').classList.remove('rk-high','rk-medium','rk-low');
+ reset1();reset2();reset4();reset5();reset6();reset7();$('oStyle').checked=false;$('oKeep').checked=false;$('oAuthor').value='';$('oCompany').value='';$('order').disabled=false;
+ hud(1);cam(1)};
+
+/* ============ 初始化 ============ */
+$('far').innerHTML=farSVG();$('near').innerHTML=nearSVG();
+[bg1,bg2,bg3,bg4,bg5,bg6,bg7].forEach((f,i)=>$('sc'+(i+1)).insertAdjacentHTML('afterbegin',f()));
+$('hit1').onclick=()=>pick(1);$('pick1').onclick=()=>pick(1);
+$('castX').onclick=()=>cast('');$('dlgX').onclick=()=>$('dlg').close();
+addEventListener('resize',fit);fit();
+reset1();reset2();reset4();reset5();reset6();reset7();hud(1);cam(1,true);
+
+/* ============ 除錯用 demo 模式（不呼叫後端） ============
+ * ?demo=<場景1-7>[:<參數>][&at=<鏡頭位置>]
+ *   參數：high|medium|low → 風險分支（S2 反應、S4 治療、S6/S7 病人造型）
+ *         S1：drag（手臂拿文件停在窗口前）、reject（拒收告示）；S6：skip（跳過人工修改）
+ *   at=1.5 → 鏡頭固定在第 1、2 場中間（截平移中途的畫面）
+ * 例：?demo=2:high  ?demo=4:medium  ?demo=5  ?demo=6  ?demo=7:low  ?demo=1:drag&at=1.5 */
+const DEMO=new URLSearchParams(location.search).get('demo');
+if(DEMO){
+ const [n0,arg='high']=DEMO.split(':'),n=Math.min(7,Math.max(1,+n0||1)),risk=['high','medium','low'].includes(arg)?arg:'high';
+ const F={upload:{id:'0123456789abcdef',name:'示範論文_第一章.docx',
+   findings:[{severity:'high',layer:'檔案層',code:'app.Application',where:'docProps/app.xml',detail:'產生工具為 python-docx'},{severity:'medium',layer:'檔案層',code:'rsid',where:'word/settings.xml',detail:'編輯工作階段異常稀少'},{severity:'low',layer:'檔案層',code:'fonts',where:'word/fontTable.xml',detail:'字型清單與內文不符'}],
+   categories:[{label:'制式轉折語（此外、總而言之）',conf:'高',count:12,auto:true},{label:'三段式排比句',conf:'中',count:7,auto:false},{label:'段落長度過度一致',conf:'低',count:3,auto:false}],
+   metrics:{},defaults:{author:'王小明',company:'某某大學'},risk:{level:risk,file:{high:1,medium:1,low:1},text:{'高':12,'中':7,'低':3}}},
+  clean:{dropped:['customXml/item1.xml','docProps/custom.xml'],after:[{severity:'low',layer:'檔案層',code:'fonts',where:'word/fontTable.xml',detail:'字型清單'}],diffs:[],style_log:{'轉折語':{count:5,examples:['此外→另外']}},risk_before:{level:risk},risk_after:{level:'low'}},
+  review:{comments:9,paragraphs:6},
+  final:{dropped:[],after:[],diffs:[],style_log:{},removed_comments:9,risk_after:{level:'low'}}};
+ api=async p=>{const k=p.split('?')[0].slice(5);await sleep(k==='clean'?4000:700);return JSON.parse(JSON.stringify(F[k]))};
+ setInfo(F.upload);S.clean=F.clean;S.review=F.review;S.skip=arg==='skip';if(n===7)S.fin=F.final;
+ S.step=n;hud(n);cam(+new URLSearchParams(location.search).get('at')||n,true);
+ if(n===1){if(arg==='drag')armDraw(1,1050,330,true);if(arg==='reject'){$('rej1n').textContent='（收到的是：報告.pdf）';$('rej1').hidden=false}}
+ else if(n===6){enter6();if(arg!=='skip')submit6(new File(['x'],'示範論文_第一章_待修版.docx'))}
+ else enter(n)}
 </script></body></html>
