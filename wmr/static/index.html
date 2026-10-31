@@ -787,7 +787,8 @@ async function doReview(){
   $('paper').classList.add('out');await sleep(2600);if(t!==TOKEN)return;
   $('printer').classList.remove('shake');$('plcd').textContent='完成';$('pled').setAttribute('fill','#2ecc71');$('say5').hidden=false;
   $('rvSt').textContent=r.comments?`待修版已產生：共 ${r.comments} 則註解，分布在 ${r.paragraphs} 段。`:'待修版已產生。';$('rvSt').className='';
-  $('rvNone').hidden=!!r.comments;$('rvDl').href='/download/'+enc(S.jid)+'/review';$('rvBtns').hidden=false
+  $('rvNone').hidden=!!r.comments;$('rvDl').href='/download/'+enc(S.jid)+'/review';$('rvBtns').hidden=false;
+  if(!r.comments&&!DEMO){await sleep(1800);if(t!==TOKEN||S.step!==5)return;S.skip=true;go(6)}   // 沒有需人工處理的段落：自動前往繳費（跳過模式）
  }catch(e){if(t!==TOKEN)return;$('printer').classList.remove('shake');$('plcd').textContent='卡紙';$('pled').setAttribute('fill','#ff3b3b');
   $('rvSt').textContent='產生待修版失敗：'+e.message;$('rvSt').className='hi';cast('產生待修版失敗：'+e.message);$('rvRetry').hidden=false}}
 $('rvRetryB').onclick=()=>{if(S.step===5)doReview()};
@@ -817,6 +818,8 @@ $('posOK').onclick=async()=>{
 $('hit6').onclick=()=>pick(6);$('pick6').onclick=()=>pick(6);
 
 /* ============ S7 領藥 ============ */
+function textFlags(ra){const t=ra&&ra.text;if(!t)return'—';const n=(t['高']||0)+(t['中']||0)+(t['低']||0);
+ return n?`${n} 處待人工判斷（高${t['高']||0}／中${t['中']||0}／低${t['低']||0}），僅供參考`:'無'}
 function reset7(){$('bag').classList.remove('give');$('bag').style.visibility='hidden';document.querySelector('.phArm').classList.remove('give');$('say7').hidden=true;$('sumDl').innerHTML='';$('fDl').href='#'}
 async function enter7(){
  const t=TOKEN,j=S.fin||{};reset7();
@@ -826,7 +829,7 @@ async function enter7(){
   ['格式比對',diffs.length?(S.style?`文字差異 ${diffs.length} 項（風格層，屬預期）`:`差異 ${diffs.length} 項，請查看詳情`):'與來源一致'],
   ['工具註解',j.removed_comments?`已移除 ${j.removed_comments} 則註解`:'無需移除'],
   ['作者',S.author||S.info.defaults?.author||'（預設）'],['公司',S.company||S.info.defaults?.company||'（預設）'],
-  ['複掃可疑度',RISK_TX[j.risk_after?.level]||'—']];
+  ['文字層可疑部位',textFlags(j.risk_after)]];
  const dl=$('sumDl');rows.forEach(([k,v])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=k;dd.textContent=v;dl.append(dt,dd)});
  $('fDl').href='/download/'+enc(S.jid)+'/final';
  const b=$('bag');b.style.visibility='visible';b.classList.add('give');document.querySelector('.phArm').classList.add('give');
