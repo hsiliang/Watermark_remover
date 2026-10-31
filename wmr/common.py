@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import re
 
-AUTHOR = "梁曦414155039"
-COMPANY = "天主教輔仁大學"
+AUTHOR = "Hsi Liang"
+COMPANY = "https://github.com/hsiliang"
 
 
 def clean_identity(author, company):

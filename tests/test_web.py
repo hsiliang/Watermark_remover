@@ -67,7 +67,7 @@ def test_custom_author_company_and_default(server, dirty_docx):
     import urllib.parse as up
     raw = open(dirty_docx, "rb").read()
     st, j = _post(server + "/api/upload?name=t.docx", raw)
-    assert j["defaults"] == {"author": "梁曦414155039", "company": "天主教輔仁大學"}
+    assert j["defaults"] == {"author": "Hsi Liang", "company": "https://github.com/hsiliang"}
     q = "&author=%s&company=%s" % (up.quote("王 & <小明>"), up.quote("某某大學"))
     st, c = _post(server + "/api/clean?id=%s&style=0&keep_hidden=0%s" % (j["id"], q))
     assert st == 200 and not [f for f in c["after"] if f["code"].endswith("not-owner")]
@@ -77,7 +77,7 @@ def test_custom_author_company_and_default(server, dirty_docx):
     # 留空 → 預設值
     st, c = _post(server + "/api/clean?id=%s&style=0&keep_hidden=0&author=&company=" % j["id"])
     core, app = _props(urllib.request.urlopen(server + "/download/" + j["id"]).read())
-    assert "梁曦414155039" in core and "天主教輔仁大學" in app
+    assert "Hsi Liang" in core and "https://github.com/hsiliang" in app
 
 
 def test_invalid_identity_rejected(server, dirty_docx):

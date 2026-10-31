@@ -5,7 +5,7 @@
 
 ## 目標
 - `scan`：列出所有可能的 AI／工具痕跡（分層、分嚴重度）。
-- `rebuild`：純本地、確定性（無 AI）的白名單重建：只搬運內容與可見格式到全新封包，作者「梁曦414155039」、公司「天主教輔仁大學」。
+- `rebuild`：純本地、確定性（無 AI）的白名單重建：只搬運內容與可見格式到全新封包，作者「Hsi Liang」、公司「https://github.com/hsiliang」。
 - `word-normalize`（選用）：以 Word for Mac（AppleScript）重存，使結構像真正 Word 產物，再由本地腳本重寫屬性。
 - `verify`：重建後再掃描，並比對文字／格式保真度。
 
