@@ -68,11 +68,12 @@ def main():
     ap.add_argument("--out")
     ap.add_argument("--dump", help="輸出逐片段分數 JSON（供 flag_corr.py 分析）")
     ap.add_argument("--no-binoculars", action="store_true")
+    ap.add_argument("--skip-ref", action="store_true", help="不重算 HC3／維基參考分數（只做方向校準），省時間")
     ap.add_argument("files", nargs="+")
     a = ap.parse_args()
 
-    hc3_h, hc3_a = load_hc3(a.ref)
-    wiki = load_wiki(a.ref)
+    hc3_h, hc3_a = load_hc3(a.ref, n=(60 if a.skip_ref else 120))
+    wiki = [] if a.skip_ref else load_wiki(a.ref)
     docs = {os.path.basename(f): split_chunks(read_doc(f)) for f in a.files}
     print("參考集：HC3 人類 %d / ChatGPT %d；維基百科片段 %d；文章片段 %s" % (
         len(hc3_h), len(hc3_a), len(wiki), {k: len(v) for k, v in docs.items()}), flush=True)
@@ -100,10 +101,11 @@ def main():
 
     for d, kind, note in dets:
         row = {"note": note}
-        row["HC3人類"] = summarize(d.score(hc3_h))
-        row["HC3_ChatGPT"] = summarize(d.score(hc3_a))
-        row["維基(人類)"] = summarize(d.score(wiki))
-        row["_auc_hc3"] = round(auc(d.score(hc3_h), d.score(hc3_a)), 3)
+        if not a.skip_ref:
+            row["HC3人類"] = summarize(d.score(hc3_h))
+            row["HC3_ChatGPT"] = summarize(d.score(hc3_a))
+            row["維基(人類)"] = summarize(d.score(wiki))
+            row["_auc_hc3"] = round(auc(d.score(hc3_h), d.score(hc3_a)), 3)
         for name, ch in docs.items():
             sc = d.score(ch)
             dump.setdefault(d.name, {})[name] = [{"text": c, "score": (None if x != x else x)} for c, x in zip(ch, sc)]

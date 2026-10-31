@@ -55,6 +55,7 @@ CATEGORIES: Dict[str, tuple] = {
     "restate":       ("重述／銜接句（換言之、這意味著…）", "低", False, "cyan",      "『換言之／這也是為什麼／更重要的是』常用來重複前一句。刪掉常不影響句意。"),
     "opener":        ("套式開頭（隨著…的發展／在當今…）", "低", False, "cyan",      "『隨著X的快速發展』是很常見的 AI 開場。直接從具體事實或問題開始。"),
     "triple_list":   ("三項並列密集", "低", False, "cyan",      "同一段多句都是『A、B與C』三項並列。保留真正三項的，其餘改成兩項或四項、或改寫句型。"),
+    "generic":       ("內容空泛（缺少具體資訊）", "低", False, "green",     "整段幾乎沒有數字、專有名詞、出處或實例。補一個你自己查到的具體數據、案例或文獻，是降低 AI 感最有效的方法之一（但工具無法替你編造事實）。"),
     "quote_mixed":   ("引號樣式混用", "低", False, "green",     "全文引號慣例不一致（「」與“”混用），請統一。"),
 }
 
@@ -78,6 +79,7 @@ _EG_RE = re.compile(r"[（(]如[^）)]+[）)]")
 _NOM_RE = re.compile(r"(?:進行|予以|加以|開展|展開)(?:了|著)?[一-鿿]{1,4}")
 _HEADPAIR_RE = re.compile(r"(?:挑戰|展望|機遇|機會|啟示|意義|影響|前景)[與及和]|[與及和](?:挑戰|展望|機遇|機會|啟示|前景)")
 _SENT_SPLIT = re.compile(r"(?<=[。！？；!?;])|\n|(?<=[.])\s+(?=[A-Z])")
+_SPECIFIC_RE = re.compile(r"\d|[A-Za-z]{2,}|《[^》]+》|第[一二三四五六七八九十百]+[條項款章節]|(?:大學|研究院|委員會|基金會|協會|醫院|公司|衛福部|衛生福利部|勞動部|教育部|行政院|國發會|統計處)")
 _SIMPLE_RE = re.compile("[%s]" % SIMPLIFIED_CHARS)
 
 
@@ -286,6 +288,16 @@ def analyze(path: str, skip_headings=("參考文獻", "參考資料", "Reference
     cv_cut = min(percentile(list(para_cv.values()), 0.20), 0.45) if para_cv else 0
     de_cut = max(percentile(list(de_rate.values()), 0.90), 5.0) if de_rate else 99
 
+    spec: Dict[int, float] = {}
+    for p in body:
+        if len(p.text) >= 60:
+            spec[p.idx] = len(_SPECIFIC_RE.findall(p.text)) * 100.0 / len(p.text)
+    spec_cut = percentile(list(spec.values()), 0.25) if spec else 0
+    generic_ids = {i for i, v in spec.items() if v <= min(spec_cut, 1.0)}
+    # 若多數段落都空泛，逐段標示沒有區辨力 → 只回報文件層級指標，不逐段標
+    generic_share = (sum(1 for v in spec.values() if v <= 1.0) / len(spec)) if spec else 0.0
+    flag_generic = generic_share < 0.5
+
     prev_open: List[str] = []
     for p in paras:
         t = p.text
@@ -341,6 +353,8 @@ def analyze(path: str, skip_headings=("參考文獻", "參考資料", "Reference
         if len(_NOM_RE.findall(t)) >= 3:
             m = _NOM_RE.search(t)
             add("nominal", p, m.start(), m.end(), note="本段 %d 處。" % len(_NOM_RE.findall(t)))
+        if flag_generic and p.idx in generic_ids:
+            add("generic", p, None, None, note="每 100 字僅 %.1f 個數字／專名／出處（本文第 25 百分位 %.1f）。" % (spec[p.idx], spec_cut))
         for m in _RESTATE_RE.finditer(t):
             add("restate", p, m.start(), m.end())
         for m in _OPENER_RE.finditer(t):
@@ -401,6 +415,7 @@ def analyze(path: str, skip_headings=("參考文獻", "參考資料", "Reference
         "每百字「的」": round(doc_text.count("的") * 100.0 / max(1, len(doc_text)), 2),
         "每百字逗號／頓號": round((doc_text.count("，") + doc_text.count("、")) * 100.0 / max(1, len(doc_text)), 2),
         "破折號數": len(re.findall("——|—", doc_text)),
+        "具體資訊稀少的段落比例": round(generic_share, 2),
         "文件判定為繁體": trad,
         "句長變異係數(逐段)第20百分位": round(cv_cut, 2),
     }

@@ -167,3 +167,20 @@ def test_triple_list_density(tmp_path):
     assert "triple_list" in cats(r)
     r2 = analyze(_doc(tmp_path, [("p", "我們需要資金、人力與技術。今天的天氣不錯，所以出門散步。")]))
     assert "triple_list" not in cats(r2)
+
+
+def test_generic_paragraph_vs_specific(tmp_path):
+    generic = "高齡化帶來許多挑戰，政府與社會都需要共同努力，透過各種方式改善現況，並且讓每一個人都能夠得到適當的照顧與支持，這是一件非常重要的事情。"
+    specific = "依衛福部二○二三年統計，失能人口達八十萬人，其中Alzheimer型占四成（Chen et al., 2021），《長期照顧服務法》第十條規定了服務範圍與資格。"
+    items = [("p", generic), ("p", specific), ("p", specific + "再補充一點，日間照顧中心共有三千二百處。"),
+             ("p", specific.replace("八十萬", "九十萬")), ("p", specific + "又一項資料。")]
+    r = analyze(_doc(tmp_path, items))
+    flagged = {f.para for f in r.flags if f.cat == "generic"}
+    assert 1 in flagged and not ({2, 3, 4, 5} & flagged)
+
+
+def test_generic_is_document_level_when_everything_is_generic(tmp_path):
+    generic = "高齡化帶來許多挑戰，政府與社會都需要共同努力，透過各種方式改善現況，並且讓每一個人都能夠得到適當的照顧與支持，這是一件非常重要的事情。"
+    r = analyze(_doc(tmp_path, [("p", generic)] * 6))
+    assert "generic" not in cats(r)                       # 全部都空泛 → 不逐段標示（無法區分）
+    assert r.metrics["具體資訊稀少的段落比例"] >= 0.9    # 改以文件層級指標呈現

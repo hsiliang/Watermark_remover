@@ -30,6 +30,8 @@ def main(paths):
     print("%-34s" % "" + "".join("%-30s" % c[:28] for c in cols))
     print("%-34s" % "[AUC HC3]" + "".join("%-30s" % merged[c].get("_auc_hc3", "-") for c in cols))
     for r in REFS:
+        if not any(r in merged[c] for c in cols):
+            continue
         print("%-34s" % ("[參考] " + r) + "".join("%-30s" % fmt(merged[c], r, kinds[c]) for c in cols))
     for f in files:
         print("%-34s" % f[:32] + "".join("%-30s" % fmt(merged[c], f, kinds[c]) for c in cols))
