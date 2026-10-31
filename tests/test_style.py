@@ -115,3 +115,11 @@ def test_punct_does_not_break_formulas_or_pair_parens():
     assert restyle_text("取 min(X, Y))，數值愈低") == "取 min(X, Y))，數值愈低"   # 緊鄰全形標點不算中文語境
     assert restyle_text("結果(如圖)很好") == "結果(如圖)很好"                  # 括號不單獨轉換，避免不成對
     assert restyle_text("你好,世界:測試") == "你好，世界：測試"                 # 漢字旁的逗號／冒號仍轉換
+
+
+def test_region_rule_does_not_break_taiwan_usage():
+    # 「網絡」在台灣指抽象網絡（社區網絡、人際網絡），不能改成「網路」(Internet)
+    assert restyle_text("建立社區網絡與支持網絡", Ctx(traditional=True)) == "建立社區網絡與支持網絡"
+    # 有歧義的詞不自動替換
+    assert restyle_text("調用警力，激活免疫細胞", Ctx(traditional=True)) == "調用警力，激活免疫細胞"
+    assert restyle_text("使用者信息", Ctx(traditional=True)) == "使用者資訊"

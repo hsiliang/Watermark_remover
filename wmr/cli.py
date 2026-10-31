@@ -54,6 +54,15 @@ def main(argv=None) -> int:
     rv.add_argument("--json", help="另存 JSON")
     rv.add_argument("--annotate", help="輸出有色標註的副本 .docx（僅供檢閱，勿繳交）")
     rv.add_argument("--skip-heading", action="append", default=None, help="略過此標題下的章節（可重複；預設含 參考文獻）")
+    ex = sub.add_parser("export", help="匯出有可疑訊號的段落給 AI／人工改寫（JSON）")
+    ex.add_argument("file")
+    ex.add_argument("-o", "--out", required=True)
+    ex.add_argument("--min-conf", choices=["低", "中", "高"], default="低")
+    ap_ = sub.add_parser("apply", help="把改寫結果（new_text）純本地寫回 docx")
+    ap_.add_argument("file")
+    ap_.add_argument("edits")
+    ap_.add_argument("-o", "--out", required=True)
+    ap_.add_argument("--force", action="store_true", help="含超連結／欄位等也強制替換（可能破壞該段結構）")
     c = sub.add_parser("clean", help="掃描→重建→(選用 Word 重存)→改屬性→複掃→保真比對")
     c.add_argument("file")
     c.add_argument("-o", "--out", required=True)
@@ -71,6 +80,18 @@ def main(argv=None) -> int:
         print(json.dumps(sc.as_dicts(f), ensure_ascii=False, indent=2) if a.json else sc.summarize(f))
         return 1 if any(x.severity == "high" for x in f) else 0
 
+    if a.cmd == "export":
+        from . import edits
+        n = edits.export_edits(a.file, a.out, min_conf=a.min_conf)
+        print("已匯出 %d 個段落 → %s\n請在每項的 new_text 填入改寫（可交給 Claude 或自己改），再執行：python3 -m wmr apply %s %s -o 新檔.docx" % (n, a.out, a.file, a.out))
+        return 0
+    if a.cmd == "apply":
+        from . import edits
+        r = edits.apply_edits(a.file, a.edits, a.out, force=a.force)
+        print("已套用 %d 段；未改動 %d 段；略過 %d 段 → %s" % (r["applied"], r["unchanged"], len(r["skipped"]), a.out))
+        for i, why in r["skipped"]:
+            print("  略過 id=%s：%s" % (i, why))
+        return 0
     if a.cmd == "review":
         return _review(a.file, a.html, a.json, a.annotate, a.skip_heading)
 

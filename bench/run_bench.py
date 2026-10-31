@@ -58,6 +58,7 @@ def read_doc(path):
 
 
 def summarize(xs):
+    xs = [x for x in xs if x == x]
     return {"median": round(st.median(xs), 3), "mean": round(st.mean(xs), 3), "n": len(xs)}
 
 
@@ -65,6 +66,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ref", required=True)
     ap.add_argument("--out")
+    ap.add_argument("--dump", help="輸出逐片段分數 JSON（供 flag_corr.py 分析）")
     ap.add_argument("--no-binoculars", action="store_true")
     ap.add_argument("files", nargs="+")
     a = ap.parse_args()
@@ -76,6 +78,7 @@ def main():
         len(hc3_h), len(hc3_a), len(wiki), {k: len(v) for k, v in docs.items()}), flush=True)
 
     results = {}
+    dump = {}
     dets = []
     for mid in ROBERTAS:
         try:
@@ -103,9 +106,10 @@ def main():
         row["_auc_hc3"] = round(auc(d.score(hc3_h), d.score(hc3_a)), 3)
         for name, ch in docs.items():
             sc = d.score(ch)
+            dump.setdefault(d.name, {})[name] = [{"text": c, "score": (None if x != x else x)} for c, x in zip(ch, sc)]
             row[name] = summarize(sc)
             if kind == "p":
-                row[name]["flag>0.5"] = round(sum(s > 0.5 for s in sc) / max(1, len(sc)), 2)
+                row[name]["flag>0.5"] = round(sum(s > 0.5 for s in sc if s == s) / max(1, len([s for s in sc if s == s])), 2)
         results[d.name] = row
         print("\n== %s  %s" % (d.name, note), flush=True)
         for k, v in row.items():
@@ -113,6 +117,8 @@ def main():
                 print("  %-28s %s" % (k, v), flush=True)
     if a.out:
         json.dump(results, open(a.out, "w"), ensure_ascii=False, indent=1)
+    if a.dump:
+        json.dump(dump, open(a.dump, "w"), ensure_ascii=False)
 
 
 if __name__ == "__main__":

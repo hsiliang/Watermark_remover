@@ -27,6 +27,29 @@ python3 -m wmr clean 檔案.docx -o out/乾淨.docx --style --review # 一次完
 - 自動略過「參考文獻」章節（`--skip-heading` 可再加）
 - 證據強度與來源見 `docs/research-notes.md`
 
+## AI 輔助改寫 → 純本地寫回（`export` / `apply`）
+真正能降低統計性檢測分數的是**內容層的改寫**（句型、節奏、論述），這件事腳本做不到，需要人或 AI。
+工具負責「把要改的段落交出去」與「把改好的結果寫回來」，寫回這一步不經過 AI：
+```
+python3 -m wmr export 稿.docx -o edits.json            # 列出有可疑訊號的段落＋各段問題與改寫指引
+#   → 把 edits.json 交給 Claude（或自己改），在每項的 new_text 填入改寫；沒改的保持 null
+python3 -m wmr apply 稿.docx edits.json -o 稿_改.docx   # 純本地寫回，保留段落與字元格式
+python3 -m wmr clean 稿_改.docx -o out/最終.docx --style --review   # 最後的重建＋屬性（作者／公司）
+```
+- 含圖片／欄位／註腳／超連結／公式的段落標為不可改（`editable:false`），請在 Word 手動處理
+- 匯出後若原稿被改動，該段會因「原文不符」被略過，不會誤改
+- new_text 可用 `**粗體**` 標記
+
+## 獨立檢測器基準測試（`bench/`，選用）
+用開源檢測器量測清理成效（不是商業系統的預測）：HC3 RoBERTa 分類器 ×3、GPT-2 中文困惑度、Binoculars（Qwen2.5）。
+```
+python3 -m venv .venv && .venv/bin/pip install -r bench/requirements-bench.txt opencc-python-reimplemented python-docx lxml
+.venv/bin/python bench/run_bench.py --ref <含 hc3_*.jsonl 與 wiki/*.txt 的資料夾> 文章.docx ... --out r.json --dump chunks.json
+.venv/bin/python bench/table.py r.json            # 對照表
+.venv/bin/python bench/flag_corr.py chunks.json 名稱=文章.docx   # 我的旗標類別 vs 檢測器分數
+```
+**重要**：這些檢測器在長篇正式文體上鑑別力有限（例如 zhv3 會把人類寫的維基百科判成 AI），只適合做「同一篇清理前後」的相對比較。
+
 最後一步（`finalize`）永遠是純本地腳本：作者／最後修改者＝梁曦414155039，公司＝天主教輔仁大學。
 
 ## 流程

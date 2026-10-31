@@ -87,7 +87,7 @@ class GPT2PPL:
 
     def score(self, texts: List[str]) -> List[float]:
         ms = [self.metrics(t) for t in texts]
-        return [m["ppl"] for m in ms if m]
+        return [m["ppl"] if m else float("nan") for m in ms]
 
 
 class Binoculars:
@@ -113,11 +113,13 @@ class Binoculars:
         return (ppl / xppl).item()
 
     def score(self, texts: List[str]) -> List[float]:
-        return [s for s in (self.one(t) for t in texts) if s is not None]
+        return [s if s is not None else float("nan") for s in (self.one(t) for t in texts)]
 
 
 def auc(neg: List[float], pos: List[float]) -> float:
     """pos 分數高於 neg 的機率（Mann-Whitney）。"""
+    neg = [x for x in neg if x == x]
+    pos = [x for x in pos if x == x]
     if not neg or not pos:
         return float("nan")
     gt = sum((p > n) + 0.5 * (p == n) for p in pos for n in neg)
