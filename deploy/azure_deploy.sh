@@ -7,7 +7,7 @@ ZIP="${WMR_ZIP:-$HOME/wmr.zip}"
 [ -f "$ZIP" ] || { echo "找不到 $ZIP（請先把 wmr.zip 上傳到 Cloud Shell 的家目錄）"; exit 1; }
 
 echo "== 目前訂閱 =="
-az account show --query "{名稱:name, 狀態:state, 訂閱ID:id}" -o table
+az account show --query "{Name:name, State:state, SubscriptionId:id}" -o table
 SKU="${WMR_SKU:-B1}"
 RG="${WMR_RG:-wmr-rg}"
 APP="${WMR_APP:-wmr-$(openssl rand -hex 4)}"
