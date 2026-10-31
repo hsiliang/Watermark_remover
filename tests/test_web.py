@@ -1,5 +1,6 @@
 import json
 import threading
+import urllib.parse
 import urllib.request
 import urllib.error
 import zipfile
@@ -85,3 +86,29 @@ def test_invalid_identity_rejected(server, dirty_docx):
     st, j = _post(server + "/api/upload?name=t.docx", open(dirty_docx, "rb").read())
     st, c = _post(server + "/api/clean?id=%s&author=%s" % (j["id"], "x" * 101))
     assert st == 500 and "作者" in c["error"]
+
+
+def test_review_copy_and_final_flow(server, tmp_path):
+    from docx import Document
+    d = Document()
+    d.add_paragraph("此外，首先要說明甲。其次要說明乙。最後要說明丙。")
+    for _ in range(6):
+        d.add_paragraph("不是甲，而是乙。這件事很重要。" * 3)
+    p = str(tmp_path / "a.docx")
+    d.save(p)
+    st, j = _post(server + "/api/upload?name=a.docx", open(p, "rb").read())
+    assert j["risk"]["level"] in ("high", "medium", "low")
+    st, c = _post(server + "/api/clean?id=%s&style=0&keep_hidden=0" % j["id"])
+    assert c["risk_before"]["level"] and c["risk_after"]["level"]
+    st, r = _post(server + "/api/review?id=" + j["id"] + "&min_conf=" + urllib.parse.quote("低"))
+    assert st == 200 and r["comments"] >= 1
+    rev = urllib.request.urlopen(server + "/download/%s/review" % j["id"]).read()
+    assert "word/comments.xml" in zipfile.ZipFile(io.BytesIO(rev)).namelist()
+    st, f = _post(server + "/api/final?id=%s&style=0&keep_hidden=0" % j["id"], rev)
+    assert st == 200 and f["removed_comments"] == r["comments"] and f["diffs"] == []
+    fin = urllib.request.urlopen(server + "/download/%s/final" % j["id"]).read()
+    names = zipfile.ZipFile(io.BytesIO(fin)).namelist()
+    assert not any("comments" in n for n in names)
+    # 沒上傳待修版（跳過人工修改）也能出最終版
+    st, f2 = _post(server + "/api/final?id=%s&style=0&keep_hidden=0" % j["id"])
+    assert st == 200 and f2["removed_comments"] == 0

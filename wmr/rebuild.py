@@ -15,7 +15,7 @@ from typing import Dict, List, Optional
 from lxml import etree
 
 from .common import (
-    AUTHOR, COMPANY, EXOTIC_SPACE_RE, INVISIBLE_RE, NS_CT, NS_REL, NS_W,
+    AUTHOR, COMPANY, TOOL_COMMENT_AUTHOR, EXOTIC_SPACE_RE, INVISIBLE_RE, NS_CT, NS_REL, NS_W,
     PARTS_DROPPED_PREFIXES,
 )
 
@@ -73,7 +73,8 @@ def clean_text(s: str) -> str:
     return EXOTIC_SPACE_RE.sub(" ", s)
 
 
-def sanitize_xml(root: etree._Element, partname: str, drop_hidden: bool = True, style=None, author: str = AUTHOR) -> None:
+def sanitize_xml(root: etree._Element, partname: str, drop_hidden: bool = True, style=None, author: str = AUTHOR,
+                 tool_ids=frozenset()) -> None:
     # 屬性：rsid*、paraId、textId
     for el in root.iter():
         if not isinstance(el.tag, str):
@@ -104,6 +105,12 @@ def sanitize_xml(root: etree._Element, partname: str, drop_hidden: bool = True, 
         elif partname.endswith("settings.xml") and el.tag in (W + "rsids", W + "docVars", W + "attachedTemplate"):
             doomed.append(el)
         elif drop_hidden and el.tag == W + "r" and el.find("%srPr/%svanish" % (W, W)) is not None:
+            doomed.append(el)
+        elif tool_ids and el.tag in (W + "commentRangeStart", W + "commentRangeEnd") and el.get(W + "id") in tool_ids:
+            doomed.append(el)
+        elif tool_ids and el.tag == W + "r" and any(c.get(W + "id") in tool_ids for c in el.findall(W + "commentReference")):
+            doomed.append(el)
+        elif tool_ids and el.tag == W + "comment" and el.get(W + "id") in tool_ids:
             doomed.append(el)
     for el in doomed:
         p = el.getparent()
@@ -185,7 +192,14 @@ def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = N
         defaults = {e.get("Extension").lower(): e.get("ContentType") for e in ct_root if e.tag == "{%s}Default" % NS_CT}
         overrides = {e.get("PartName").lstrip("/"): e.get("ContentType") for e in ct_root if e.tag == "{%s}Override" % NS_CT}
 
-        kept = [n for n in names if n != "[Content_Types].xml" and n != "_rels/.rels" and not _dropped(n)]
+        # 待修版註解（作者＝TOOL_COMMENT_AUTHOR）整批移除；原文件自己的註解不動
+        tool_ids, drop_comments = set(), False
+        if "word/comments.xml" in names:
+            cs = [c for c in etree.fromstring(z.read("word/comments.xml")) if c.tag == W + "comment"]
+            tool_ids = {c.get(W + "id") for c in cs if c.get(W + "author") == TOOL_COMMENT_AUTHOR}
+            drop_comments = bool(tool_ids) and len(tool_ids) == len(cs)
+        kept = [n for n in names if n != "[Content_Types].xml" and n != "_rels/.rels" and not _dropped(n)
+                and not (drop_comments and n == "word/comments.xml")]
         # 圖檔改成 Word 風格的 imageN.ext（依在 document rels 中出現的順序，其餘依名稱排序）
         media = [n for n in kept if n.startswith("word/media/")]
         order_hint = {}
@@ -231,7 +245,7 @@ def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = N
                 if ctx is not None and n == "word/document.xml":
                     from .suspect import _style_names, reference_paragraph_set
                     ctx.skip = reference_paragraph_set(root, _style_names(z), ("參考文獻", "參考資料", "References", "Bibliography"))
-                sanitize_xml(root, n, drop_hidden, ctx, author)
+                sanitize_xml(root, n, drop_hidden, ctx, author, tool_ids)
                 data = _ser(root)
             elif low.endswith(".png"):
                 data = strip_png(data)
