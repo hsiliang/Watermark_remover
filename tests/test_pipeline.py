@@ -94,3 +94,13 @@ def test_rebuild_normalizes_docxjs_structure(docxjs_like, tmp_path):
     assert not [n for n in z.namelist() if n.endswith("/")]
     assert [f for f in scan(out) if f.severity in ("high", "medium", "low") and f.layer != "xml"] == []
     assert len(Document(out).inline_shapes) == 1
+
+
+def test_cli_custom_author_company(dirty_docx, tmp_path):
+    import zipfile
+    from wmr.cli import main
+    out = str(tmp_path / "o.docx")
+    assert main(["clean", dirty_docx, "-o", out, "--author", "測試者", "--company", "測試公司"]) in (0, 1)
+    z = zipfile.ZipFile(out)
+    assert "<dc:creator>測試者</dc:creator>" in z.read("docProps/core.xml").decode()
+    assert "<Company>測試公司</Company>" in z.read("docProps/app.xml").decode()

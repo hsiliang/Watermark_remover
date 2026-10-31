@@ -73,7 +73,7 @@ def clean_text(s: str) -> str:
     return EXOTIC_SPACE_RE.sub(" ", s)
 
 
-def sanitize_xml(root: etree._Element, partname: str, drop_hidden: bool = True, style=None) -> None:
+def sanitize_xml(root: etree._Element, partname: str, drop_hidden: bool = True, style=None, author: str = AUTHOR) -> None:
     # 屬性：rsid*、paraId、textId
     for el in root.iter():
         if not isinstance(el.tag, str):
@@ -85,9 +85,9 @@ def sanitize_xml(root: etree._Element, partname: str, drop_hidden: bool = True, 
         if el.tag in (W + "t", W + "instrText", W + "delText") and el.text:
             el.text = clean_text(el.text)
         if el.tag in (W + "ins", W + "del", W + "comment", W + "moveFrom", W + "moveTo") and el.get(W + "author") is not None:
-            el.set(W + "author", AUTHOR)
+            el.set(W + "author", author)
         if el.tag == W + "comment" and el.get(W + "initials") is not None:
-            el.set(W + "initials", AUTHOR[0])
+            el.set(W + "initials", author[:1])
 
     # 移除節點
     gobk_ids = {b.get(W + "id") for b in root.iter(W + "bookmarkStart") if b.get(W + "name") == "_GoBack"}
@@ -128,7 +128,11 @@ def _ser(root: etree._Element) -> bytes:
     return DECL + etree.tostring(root, encoding="UTF-8", xml_declaration=False)
 
 
-def _core_xml(now: str) -> bytes:
+def _xesc(s: str) -> str:
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _core_xml(now: str, author: str = AUTHOR) -> bytes:
     s = (
         '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" '
         'xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" '
@@ -137,11 +141,11 @@ def _core_xml(now: str) -> bytes:
         '<dc:description></dc:description><cp:lastModifiedBy>%s</cp:lastModifiedBy><cp:revision>1</cp:revision>'
         '<dcterms:created xsi:type="dcterms:W3CDTF">%s</dcterms:created>'
         '<dcterms:modified xsi:type="dcterms:W3CDTF">%s</dcterms:modified></cp:coreProperties>'
-    ) % (AUTHOR, AUTHOR, now, now)
+    ) % (_xesc(author), _xesc(author), now, now)
     return DECL + s.encode("utf-8")
 
 
-def _app_xml() -> bytes:
+def _app_xml(company: str = COMPANY) -> bytes:
     s = (
         '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" '
         'xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'
@@ -149,7 +153,7 @@ def _app_xml() -> bytes:
         '<DocSecurity>0</DocSecurity><ScaleCrop>false</ScaleCrop><Company>%s</Company>'
         '<LinksUpToDate>false</LinksUpToDate><SharedDoc>false</SharedDoc><HyperlinksChanged>false</HyperlinksChanged>'
         '<AppVersion>16.0000</AppVersion></Properties>'
-    ) % COMPANY
+    ) % _xesc(company)
     return DECL + s.encode("utf-8")
 
 
@@ -162,7 +166,8 @@ def _resolve(base_part: str, target: str) -> str:
     return posixpath.normpath(posixpath.join(base_dir, target)).lstrip("/")
 
 
-def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = None, style=False) -> Dict[str, List[str]]:
+def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = None, style=False,
+            author: str = AUTHOR, company: str = COMPANY) -> Dict[str, List[str]]:
     now = now or _dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
     report = {"dropped": [], "kept": []}
     with zipfile.ZipFile(src) as z:
@@ -226,7 +231,7 @@ def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = N
                 if ctx is not None and n == "word/document.xml":
                     from .suspect import _style_names, reference_paragraph_set
                     ctx.skip = reference_paragraph_set(root, _style_names(z), ("參考文獻", "參考資料", "References", "Bibliography"))
-                sanitize_xml(root, n, drop_hidden, ctx)
+                sanitize_xml(root, n, drop_hidden, ctx, author)
                 data = _ser(root)
             elif low.endswith(".png"):
                 data = strip_png(data)
@@ -242,8 +247,8 @@ def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = N
             '<Relationship Id="rId3" Type="%s" Target="docProps/app.xml"/></Relationships>'
         ) % (NS_REL, REL_OFFICEDOC, REL_CORE, REL_APP)
         files["_rels/.rels"] = DECL + root_rels.encode()
-        files["docProps/core.xml"] = _core_xml(now)
-        files["docProps/app.xml"] = _app_xml()
+        files["docProps/core.xml"] = _core_xml(now, author)
+        files["docProps/app.xml"] = _app_xml(company)
 
         ct = ['<Types xmlns="%s">' % NS_CT]
         used_ext = {n.rsplit(".", 1)[-1].lower() for n in files if "." in n.rsplit("/", 1)[-1]}

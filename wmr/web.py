@@ -13,6 +13,7 @@ import shutil
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from .common import AUTHOR, COMPANY, clean_identity
 from . import finalize, rebuild as rb, report, scan as sc, suspect, verify as vf
 
 ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "out", "web")
@@ -41,7 +42,8 @@ def do_upload(data: bytes, name: str) -> dict:
     with open(os.path.join(d, "review.html"), "w", encoding="utf-8") as f:
         f.write(report.build_html(rv, os.path.basename(name)))
     return {"id": jid, "name": os.path.basename(name), "findings": sc.as_dicts(findings),
-            "categories": _cats(rv), "metrics": rv.metrics}
+            "categories": _cats(rv), "metrics": rv.metrics,
+            "defaults": {"author": AUTHOR, "company": COMPANY}}
 
 
 def _cats(rv) -> list:
@@ -52,15 +54,16 @@ def _cats(rv) -> list:
     return out
 
 
-def do_clean(jid: str, style: bool, keep_hidden: bool) -> dict:
+def do_clean(jid: str, style: bool, keep_hidden: bool, author: str = "", company: str = "") -> dict:
+    author, company = clean_identity(author, company)
     d = _dir(jid)
     src = os.path.join(d, "in.docx")
     if not os.path.exists(src):
         raise FileNotFoundError("找不到上傳的檔案")
     out = os.path.join(d, "clean.docx")
-    rep = rb.rebuild(src, out, drop_hidden=not keep_hidden, style=style)
-    finalize.finalize_props(out)
-    after = sc.scan(out, style=style)
+    rep = rb.rebuild(src, out, drop_hidden=not keep_hidden, style=style, author=author, company=company)
+    finalize.finalize_props(out, author, company)
+    after = sc.scan(out, style=style, author=author, company=company)
     diffs = vf.compare(src, out)
     log = {}
     ctx = rep.get("style_ctx")
@@ -131,7 +134,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(do_upload(body, name))
             if u.path == "/api/clean":
                 flag = lambda k: q.get(k, ["0"])[0] == "1"
-                return self._json(do_clean(q.get("id", [""])[0], flag("style"), flag("keep_hidden")))
+                return self._json(do_clean(q.get("id", [""])[0], flag("style"), flag("keep_hidden"),
+                                           q.get("author", [""])[0], q.get("company", [""])[0]))
         except Exception as e:  # 回報給使用者而不是讓連線斷掉
             return self._json({"error": "%s: %s" % (type(e).__name__, e)}, 500)
         self._send(404, b"not found")
@@ -174,6 +178,9 @@ button:disabled{opacity:.5}label{display:block;margin:6px 0}h2{font-size:16px;ma
  <div class="card"><h2>3. 清理</h2>
   <label><input type="checkbox" id="style"> 啟用文字風格層（規則式替換，選用；不處理參考文獻）</label>
   <label><input type="checkbox" id="keep"> 保留隱藏文字（預設會刪除）</label>
+  <label>作者／最後修改者 <input id="author" type="text" maxlength="100" style="width:16em"></label>
+  <label>公司 <input id="company" type="text" maxlength="100" style="width:16em"></label>
+  <div class="mut">留空則使用預設值（即欄位中的初始內容）。</div>
   <button id="go">清理並產生新檔</button></div>
 </div>
 <div id="step3" class="hide"><div class="card"><h2>結果</h2><div id="res"></div></div></div>
@@ -186,19 +193,19 @@ async function upload(file){
  $('msg').textContent='分析中…（大檔可能要數十秒）';$('step3').classList.add('hide');
  const r=await fetch('/api/upload?name='+encodeURIComponent(file.name),{method:'POST',body:file});const j=await r.json();
  if(j.error){$('msg').textContent='錯誤：'+j.error;return}
- jid=j.id;$('msg').textContent='';$('fname').textContent=j.name;$('findings').innerHTML=ftable(j.findings);
+ jid=j.id;if(!$('author').value)$('author').value=j.defaults.author;if(!$('company').value)$('company').value=j.defaults.company;$('msg').textContent='';$('fname').textContent=j.name;$('findings').innerHTML=ftable(j.findings);
  const tot=j.categories.reduce((s,c)=>s+c.count,0);
  $('cats').innerHTML=j.categories.length?`<p>共 ${tot} 處</p><table><tr><th>信心</th><th>類型</th><th>數量</th><th>處理</th></tr>`+j.categories.map(c=>`<tr><td>${c.conf}</td><td>${esc(c.label)}</td><td>${c.count}</td><td>${c.auto?'可自動修':'需人工'}</td></tr>`).join('')+'</table>':'<span class="ok">沒有可疑部位</span>';
  $('rep').href='/report/'+jid;$('step2').classList.remove('hide')}
 async function clean(){
  $('go').disabled=true;$('go').textContent='處理中…';
- const r=await fetch(`/api/clean?id=${jid}&style=${$('style').checked?1:0}&keep_hidden=${$('keep').checked?1:0}`,{method:'POST'});const j=await r.json();
+ const r=await fetch(`/api/clean?id=${jid}&style=${$('style').checked?1:0}&keep_hidden=${$('keep').checked?1:0}&author=${encodeURIComponent($('author').value)}&company=${encodeURIComponent($('company').value)}`,{method:'POST'});const j=await r.json();
  $('go').disabled=false;$('go').textContent='清理並產生新檔';
  if(j.error){$('msg').textContent='錯誤：'+j.error;return}
  let h=`<p><a class="btn" href="/download/${jid}">下載清理後的 .docx</a></p><h2>清理後複掃</h2>`+ftable(j.after);
  h+='<h2>保真比對（原檔 vs 輸出）</h2>'+(j.diffs.length?'<ul>'+j.diffs.map(d=>`<li>${esc(d)}</li>`).join('')+'</ul>'+($('style').checked?'<div class="mut">已啟用風格層：文字差異為預期，請只看表格、圖片。</div>':''):'<span class="ok">段落／樣式／表格／圖片一致</span>');
  const sl=Object.entries(j.style_log||{});if(sl.length)h+='<h2>風格層變更</h2><table>'+sl.map(([g,v])=>`<tr><td>${esc(g)}</td><td>${v.count} 處</td><td>${esc((v.examples||[]).join('；'))}</td></tr>`).join('')+'</table>';
- h+=`<p class="mut">已丟棄部件：${esc(j.dropped.join(', ')||'無')}。作者／公司已設為梁曦414155039／天主教輔仁大學。建議用 Word 開啟確認版面。</p>`;
+ h+=`<p class="mut">已丟棄部件：${esc(j.dropped.join(', ')||'無')}。作者／公司已設為 ${esc($('author').value||'預設')}／${esc($('company').value||'預設')}。建議用 Word 開啟確認版面。</p>`;
  $('res').innerHTML=h;$('step3').classList.remove('hide')}
 $('drop').onclick=()=>$('file').click();$('file').onchange=e=>e.target.files[0]&&upload(e.target.files[0]);
 $('drop').ondragover=e=>{e.preventDefault();$('drop').classList.add('over')};$('drop').ondragleave=()=>$('drop').classList.remove('over');

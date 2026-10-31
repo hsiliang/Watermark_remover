@@ -56,3 +56,31 @@ def test_rejects_foreign_host_header(server):
     with pytest.raises(urllib.error.HTTPError) as e:
         urllib.request.urlopen(req)
     assert e.value.code == 403
+
+
+def _props(body):
+    z = zipfile.ZipFile(io.BytesIO(body))
+    return z.read("docProps/core.xml").decode(), z.read("docProps/app.xml").decode()
+
+
+def test_custom_author_company_and_default(server, dirty_docx):
+    import urllib.parse as up
+    raw = open(dirty_docx, "rb").read()
+    st, j = _post(server + "/api/upload?name=t.docx", raw)
+    assert j["defaults"] == {"author": "梁曦414155039", "company": "天主教輔仁大學"}
+    q = "&author=%s&company=%s" % (up.quote("王 & <小明>"), up.quote("某某大學"))
+    st, c = _post(server + "/api/clean?id=%s&style=0&keep_hidden=0%s" % (j["id"], q))
+    assert st == 200 and not [f for f in c["after"] if f["code"].endswith("not-owner")]
+    core, app = _props(urllib.request.urlopen(server + "/download/" + j["id"]).read())
+    assert "<dc:creator>王 &amp; &lt;小明&gt;</dc:creator>" in core and "<cp:lastModifiedBy>王 &amp; &lt;小明&gt;</cp:lastModifiedBy>" in core
+    assert "<Company>某某大學</Company>" in app
+    # 留空 → 預設值
+    st, c = _post(server + "/api/clean?id=%s&style=0&keep_hidden=0&author=&company=" % j["id"])
+    core, app = _props(urllib.request.urlopen(server + "/download/" + j["id"]).read())
+    assert "梁曦414155039" in core and "天主教輔仁大學" in app
+
+
+def test_invalid_identity_rejected(server, dirty_docx):
+    st, j = _post(server + "/api/upload?name=t.docx", open(dirty_docx, "rb").read())
+    st, c = _post(server + "/api/clean?id=%s&author=%s" % (j["id"], "x" * 101))
+    assert st == 500 and "作者" in c["error"]

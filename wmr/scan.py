@@ -32,7 +32,7 @@ def _parse(z: zipfile.ZipFile, name: str):
         return None
 
 
-def scan(path: str, style: bool = False) -> List[Finding]:
+def scan(path: str, style: bool = False, author: str = AUTHOR, company: str = COMPANY) -> List[Finding]:
     out: List[Finding] = []
     add = lambda *a, **k: out.append(Finding(*a, **k))
     with zipfile.ZipFile(path) as z:
@@ -83,11 +83,11 @@ def scan(path: str, style: bool = False) -> List[Finding]:
             lm = t("{%s}lastModifiedBy" % NS_CP)
             if c in SIGNATURE_CREATORS:
                 add("properties", "creator-signature", "high", "core.creator", c)
-            elif c != AUTHOR:
+            elif c != author:
                 add("properties", "creator-not-owner", "medium", "core.creator", c)
             if lm in SIGNATURE_CREATORS:
                 add("properties", "lastmodifiedby-signature", "high", "core.lastModifiedBy", lm)
-            elif lm and lm != AUTHOR:
+            elif lm and lm != author:
                 add("properties", "lastmodifiedby-not-owner", "medium", "core.lastModifiedBy", lm)
             if t("{%s}description" % NS_DC) in SIGNATURE_DESCRIPTIONS:
                 add("properties", "description-signature", "high", "core.description", t("{%s}description" % NS_DC))
@@ -102,7 +102,7 @@ def scan(path: str, style: bool = False) -> List[Finding]:
                 return (e.text or "") if e is not None else ""
             if a("Application") in SIGNATURE_APPS or not a("Application"):
                 add("properties", "application-signature", "high", "app.Application", a("Application") or "(空)")
-            if a("Company") != COMPANY:
+            if a("Company") != company:
                 add("properties", "company-not-owner", "medium", "app.Company", a("Company") or "(空)")
 
         word_saved = bool(app is not None and app.find("{%s}Pages" % NS_EP) is not None
@@ -138,7 +138,7 @@ def scan(path: str, style: bool = False) -> List[Finding]:
                     add("content", "tiny-font", "high", n, "字級 ≤1pt")
                 elif el.tag == W + "color" and "styles" not in n and "numbering" not in n and "settings" not in n and (el.get(W + "val") or "").upper() == "FFFFFF":
                     add("content", "white-text", "medium", n, "白色文字（可能為隱藏內容）")
-                elif el.tag in (W + "comment",) and (el.get(W + "author") or "") not in ("", AUTHOR):
+                elif el.tag in (W + "comment",) and (el.get(W + "author") or "") not in ("", author):
                     add("package", "comment-author", "high", n, el.get(W + "author"))
                 if style and el.tag == W + "t" and el.text:
                     from .style import scan_text

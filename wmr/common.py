@@ -5,6 +5,17 @@ import re
 AUTHOR = "梁曦414155039"
 COMPANY = "天主教輔仁大學"
 
+
+def clean_identity(author, company):
+    """整理使用者提供的作者／公司；空白或 None 用預設值，過長或含控制字元則報錯。"""
+    out = []
+    for v, d, label in ((author, AUTHOR, "作者"), (company, COMPANY, "公司")):
+        v = (v if v is not None else "").strip() or d
+        if len(v) > 100 or any(ord(ch) < 32 or ord(ch) == 127 for ch in v):
+            raise ValueError("%s欄位不合法（最長 100 字，不可含控制字元）" % label)
+        out.append(v)
+    return out[0], out[1]
+
 NS_W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 NS_CP = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
 NS_DC = "http://purl.org/dc/elements/1.1/"

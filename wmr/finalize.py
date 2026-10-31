@@ -17,7 +17,7 @@ def _set(root, tag, text):
     e.text = text
 
 
-def finalize_props(path: str) -> None:
+def finalize_props(path: str, author: str = AUTHOR, company: str = COMPANY) -> None:
     with zipfile.ZipFile(path) as z:
         items = [(i, z.read(i.filename)) for i in z.infolist()]
     now = _dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
@@ -25,15 +25,15 @@ def finalize_props(path: str) -> None:
     for info, data in items:
         if info.filename == "docProps/core.xml":
             r = etree.fromstring(data)
-            _set(r, "{%s}creator" % NS_DC, AUTHOR)
-            _set(r, "{%s}lastModifiedBy" % NS_CP, AUTHOR)
+            _set(r, "{%s}creator" % NS_DC, author)
+            _set(r, "{%s}lastModifiedBy" % NS_CP, author)
             for t in ("title", "subject", "description"):
                 _set(r, "{%s}%s" % (NS_DC, t), "")
             _set(r, "{%s}keywords" % NS_CP, "")
             data = _ser(r)
         elif info.filename == "docProps/app.xml":
             r = etree.fromstring(data)
-            _set(r, "{%s}Company" % NS_EP, COMPANY)
+            _set(r, "{%s}Company" % NS_EP, company)
             data = _ser(r)
         out.append((info.filename, data))
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zo:

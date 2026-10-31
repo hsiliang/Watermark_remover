@@ -6,6 +6,7 @@ import os
 import sys
 import tempfile
 
+from .common import AUTHOR, COMPANY, clean_identity
 from . import finalize, rebuild as rb, scan as sc, verify as vf
 
 
@@ -74,6 +75,8 @@ def main(argv=None) -> int:
     c.add_argument("--render-check", action="store_true", help="用 LibreOffice 渲染原檔與輸出，逐頁比對畫面（最直接的格式保真證據）")
     c.add_argument("--style-rules", help="啟用的風格規則群組，逗號分隔（預設全開，另可加 quotes）。可用：artefact,filler,lexicon,region,markdown,emoji,dash,punct,quotes")
     c.add_argument("--review", action="store_true", help="清理後產出可疑部位報告與標註副本")
+    c.add_argument("--author", default=None, help="最終檔的作者／最後修改者（預設 %s）" % AUTHOR)
+    c.add_argument("--company", default=None, help="最終檔的公司（預設 %s）" % COMPANY)
     c.add_argument("--keep-hidden", action="store_true", help="不刪除隱藏文字")
     c.add_argument("--page-check", action="store_true", help="用 Word 重存原檔與輸出檔，比對頁數／字數")
     a = ap.parse_args(argv)
@@ -103,12 +106,13 @@ def main(argv=None) -> int:
     if a.cmd == "review":
         return _review(a.file, a.html, a.json, a.annotate, a.skip_heading)
 
-    before = sc.scan(a.file, style=a.style)
+    author, company = clean_identity(a.author, a.company)
+    before = sc.scan(a.file, style=a.style, author=author, company=company)
     print("== 清理前 ==\n" + sc.summarize(before))
     tmp = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "out", "_work")
     os.makedirs(tmp, exist_ok=True)
     stage = os.path.join(tmp, "stage1.docx")
-    rep = rb.rebuild(a.file, stage, drop_hidden=not a.keep_hidden, style=_style_arg(a))
+    rep = rb.rebuild(a.file, stage, drop_hidden=not a.keep_hidden, style=_style_arg(a), author=author, company=company)
     ctx = rep.get("style_ctx")
     if ctx is not None:
         print("\n== 風格層變更日誌 ==")
@@ -126,8 +130,8 @@ def main(argv=None) -> int:
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     with open(cur, "rb") as fi, open(a.out, "wb") as fo:
         fo.write(fi.read())
-    finalize.finalize_props(a.out)  # 純本地最後一步
-    after = sc.scan(a.out, style=a.style)
+    finalize.finalize_props(a.out, author, company)  # 純本地最後一步
+    after = sc.scan(a.out, style=a.style, author=author, company=company)
     print("\n== 清理後 ==\n" + sc.summarize(after))
     diffs = vf.compare(a.file, a.out)
     print("\n== 保真比對 ==" + ("（已啟用風格層：文字／字數差異為預期，請只看表格、圖片、頁數）" if a.style else "") + "\n" + ("\n".join(diffs) if diffs else "段落/樣式/表格/圖片一致"))
