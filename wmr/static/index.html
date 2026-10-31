@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Watermark Remover</title>
+<style>
+:root{--bg:#eceae3;--fg:#24231f;--mut:#6f6c63;--card:#fbfaf6;--bd:#cfcbbf;--acc:#2f5d8a;--acc2:#e8eef5;--hi:#b3261e;--md:#a86400;--lo:#6a6a6a;--ok:#1b7a3d;--wall:#b9c2b2;--wood:#6b4a2f;--wood2:#573b25;--glass:#dfe8ea;--paper:#fff}
+@media(prefers-color-scheme:dark){:root{--bg:#171715;--fg:#e8e6df;--mut:#9a9890;--card:#222220;--bd:#3a3a36;--acc:#7fb0e0;--acc2:#26323f;--hi:#ff8a80;--md:#ffc266;--lo:#aaa;--ok:#6fd08c;--wall:#4a5347;--wood:#7a5736;--wood2:#5f442b;--glass:#34403f;--paper:#f4f2ea}}
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 -apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;display:flex;flex-direction:column;overflow:hidden}
+header{display:flex;align-items:baseline;gap:14px;padding:12px 24px 4px}
+h1{font-size:18px;margin:0;letter-spacing:.5px}.mut{color:var(--mut);font-size:12px}
+#line{display:flex;flex:1;min-height:0;align-items:stretch;gap:0;padding:8px 20px 6px}
+.st{flex:1 1 0;min-width:0;background:var(--card);border:2px solid var(--bd);border-radius:12px;padding:12px 12px 10px;display:flex;flex-direction:column;opacity:.5;transition:opacity .3s,border-color .3s,box-shadow .3s}
+.st.big{flex:1.35 1 0}
+.st[data-s=active]{opacity:1;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc2)}
+.st[data-s=done]{opacity:1}
+.st h2{font-size:15px;margin:0;display:flex;align-items:center;gap:8px}
+.no{background:var(--acc);color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;flex:none}
+.st[data-s=done] .no{background:var(--ok)}
+.intro{font-size:12px;color:var(--mut);margin:4px 0 8px;min-height:36px}
+.body{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;position:relative}
+.pipe{flex:0 0 26px;display:flex;align-items:center;justify-content:center}
+.pipe i{display:block;width:100%;height:6px;border-radius:3px;background:var(--bd);position:relative;overflow:hidden}
+.pipe.on i{background:repeating-linear-gradient(90deg,var(--acc) 0 8px,transparent 8px 14px);background-size:14px 6px;animation:flow .6s linear infinite}
+@keyframes flow{to{background-position:14px 0}}
+button,.btn{background:var(--acc);color:#fff;border:0;border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer;text-decoration:none;display:inline-block;font-family:inherit}
+button.ghost,.btn.ghost{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+button:disabled{opacity:.45;cursor:not-allowed}
+/* 1 服務台 */
+#desk{position:relative;width:100%;max-width:250px;aspect-ratio:6/5.2;cursor:pointer}
+#desk svg{width:100%;height:100%;display:block}
+#hole{transition:transform .2s}
+#desk.over #hole,#desk:hover #hole{transform:scale(1.35);transform-origin:120px 138px}
+#glow{opacity:.0;transition:opacity .2s}#desk.over #glow,#desk:hover #glow{opacity:1}
+#flyer{position:absolute;left:50%;top:66%;width:34px;height:42px;background:var(--paper);border:1px solid #999;border-radius:2px;box-shadow:0 1px 3px #0004;transform:translate(-50%,-300%);opacity:0;pointer-events:none;font-size:8px;color:#444;padding:4px 3px;overflow:hidden}
+#flyer.go{animation:post 1s ease-in forwards}
+@keyframes post{0%{opacity:1;transform:translate(-50%,-260%) rotate(-8deg) scale(1.3)}60%{opacity:1;transform:translate(-50%,-50%) rotate(0) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.1)}}
+#stamp{position:absolute;right:6%;top:6%;border:3px solid var(--ok);color:var(--ok);padding:0 8px;border-radius:4px;font-weight:700;transform:rotate(-12deg) scale(2);opacity:0;transition:all .25s}
+#stamp.show{opacity:.9;transform:rotate(-12deg) scale(1)}
+/* 2 檢測 */
+.sev{display:flex;gap:8px;justify-content:center}.sev div{border:1px solid var(--bd);border-radius:8px;padding:4px 10px;min-width:54px}
+.sev b{display:block;font-size:20px;line-height:1.2}.hi{color:var(--hi)}.md{color:var(--md)}.lo{color:var(--lo)}.ok{color:var(--ok)}
+.tops{font-size:12px;text-align:left;width:100%;margin:0;padding:0;list-style:none}.tops li{display:flex;justify-content:space-between;gap:6px;border-bottom:1px dotted var(--bd);padding:1px 0}
+.row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+/* 3 設定 */
+.form{text-align:left;width:100%;font-size:13px}.form label{display:block;margin:4px 0}.form input[type=text]{width:100%;padding:5px 7px;border:1px solid var(--bd);border-radius:5px;background:var(--bg);color:var(--fg);font:inherit;font-size:12px}
+.form small{color:var(--mut);display:block;font-size:11px;line-height:1.3;margin-left:20px}
+/* 4 清理 */
+.chk{list-style:none;margin:0;padding:0;text-align:left;font-size:12.5px;width:100%}.chk li{padding:3px 0;display:flex;gap:8px;align-items:flex-start;color:var(--mut)}
+.chk li b{flex:none;width:16px;text-align:center}.chk li.run{color:var(--fg)}.chk li.run b{animation:blink .8s infinite}.chk li.ok2{color:var(--fg)}.chk li.ok2 b{color:var(--ok)}.chk li.bad b{color:var(--hi)}
+@keyframes blink{50%{opacity:.2}}
+/* 5 印表機 */
+#printer{position:relative;width:100%;max-width:230px;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center}
+#printer svg{width:100%;flex:none;display:block}
+#slotwin{width:56%;flex:1;min-height:0;overflow:hidden;position:relative;margin-top:-2px}
+#paper{position:absolute;left:0;right:0;top:0;height:100%;background:var(--paper);border:1px solid #aaa;border-top:0;color:#333;padding:8px 6px;font-size:11px;transform:translateY(-100%);box-shadow:0 2px 5px #0003;display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:flex-start}
+#paper.out{animation:out 2.4s steps(14) forwards}
+@keyframes out{to{transform:translateY(0)}}
+#paper b{font-size:10px}#paper .ln{height:3px;background:#bbb;width:100%;border-radius:2px}
+#printer.busy svg{animation:shake .12s infinite}
+@keyframes shake{50%{transform:translateX(1px)}}
+#fine{padding:2px 24px 10px;display:flex;justify-content:space-between;gap:12px;min-height:30px;align-items:center}
+#msg{color:var(--hi);font-size:12.5px}
+dialog{border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--fg);width:min(860px,92vw);max-height:84vh;padding:0}
+dialog::backdrop{background:#0006}.dh{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--bd)}
+.dbody{padding:12px 16px;overflow:auto;max-height:calc(84vh - 56px)}
+table{border-collapse:collapse;width:100%;font-size:12.5px}td,th{border-bottom:1px solid var(--bd);padding:3px 8px;text-align:left;vertical-align:top}
+.high{color:var(--hi)}.medium{color:var(--md)}.low{color:var(--lo)}
+@media (max-width:1000px),(max-height:560px){body{overflow:auto}#line{flex-wrap:wrap}.st{flex:1 1 280px;min-height:300px}.pipe{display:none}}
+</style></head><body>
+<header><h1>Watermark Remover</h1><span class="mut">AI 痕跡檢測與清理流水線 · 輸出為「可疑度」提示，非是否為 AI 的二分法判定</span></header>
+<div id="line">
+ <section class="st big" id="s1" data-s="active"><h2><span class="no">1</span>服務台</h2>
+  <div class="intro">請把原始 .docx 從小孔遞進來（拖曳到孔上，或點一下）。</div>
+  <div class="body"><div id="desk" title="拖曳 .docx 到小孔，或點擊選擇檔案">
+   <svg viewBox="0 0 240 208" aria-label="服務台">
+    <rect width="240" height="208" fill="var(--wall)"/>
+    <rect x="70" y="8" width="100" height="22" rx="3" fill="#2d3b45"/><text x="120" y="24" text-anchor="middle" font-size="13" fill="#f2e9c9" font-weight="700">服 務 台</text>
+    <rect x="22" y="40" width="196" height="64" rx="4" fill="var(--glass)" stroke="#7d8d90" stroke-width="3"/>
+    <g opacity=".5" style="filter:blur(2.2px)"><circle cx="120" cy="66" r="13" fill="#3b3b3b"/><path d="M92 104 Q96 82 120 80 Q144 82 148 104Z" fill="#3b3b3b"/><rect x="108" y="62" width="24" height="6" fill="#111"/></g>
+    <text x="120" y="98" text-anchor="middle" font-size="8" fill="#6c7a7c">（請勿直視）</text>
+    <rect x="0" y="108" width="240" height="100" fill="var(--wood)"/><rect x="0" y="108" width="240" height="8" fill="var(--wood2)"/>
+    <rect x="30" y="124" width="180" height="70" rx="3" fill="none" stroke="var(--wood2)" stroke-width="2"/>
+    <g id="hole"><rect id="glow" x="104" y="130" width="32" height="16" rx="8" fill="#ffd36a"/><rect x="108" y="134" width="24" height="8" rx="4" fill="#0c0c0c"/></g>
+    <text x="120" y="164" text-anchor="middle" font-size="9" fill="#f0e2c4">文件請由此孔遞交</text>
+    <text x="120" y="178" text-anchor="middle" font-size="7.5" fill="#d8c8a6">午休時間 12:00–13:30 暫停受理</text>
+   </svg><div id="flyer"></div><div id="stamp">已收件</div></div>
+   <div id="fname" class="mut">尚未收件</div><input id="file" type="file" accept=".docx" hidden></div></section>
+ <div class="pipe" id="p1"><i></i></div>
+ <section class="st" id="s2" data-s="locked"><h2><span class="no">2</span>檢測</h2>
+  <div class="intro">掃描檔案層與文字層，給出<b>可疑度</b>，不下「是不是 AI」的判決。</div>
+  <div class="body" id="b2"><span class="mut">等待收件…</span></div></section>
+ <div class="pipe" id="p2"><i></i></div>
+ <section class="st" id="s3" data-s="locked"><h2><span class="no">3</span>設定</h2>
+  <div class="intro">選擇是否套用風格層，並指定最終檔的作者與公司。</div>
+  <div class="body"><div class="form">
+   <label><input type="checkbox" id="style"> 啟用文字風格層<small>規則式替換，不處理參考文獻</small></label>
+   <label><input type="checkbox" id="keep"> 保留隱藏文字<small>預設會刪除</small></label>
+   <label>作者／最後修改者<input id="author" type="text" maxlength="100"></label>
+   <label>公司<input id="company" type="text" maxlength="100"></label>
+   <small style="margin:0">留空則使用預設值。</small></div>
+   <button id="go" disabled>開始清理</button></div></section>
+ <div class="pipe" id="p3"><i></i></div>
+ <section class="st" id="s4" data-s="locked"><h2><span class="no">4</span>清理</h2>
+  <div class="intro">純本地腳本：白名單重建、改屬性、複掃、保真比對（不呼叫 AI）。</div>
+  <div class="body"><ul class="chk" id="chk">
+   <li id="c1"><b>·</b><span>白名單重建</span></li><li id="c2"><b>·</b><span>改寫作者與公司</span></li>
+   <li id="c3"><b>·</b><span>複掃痕跡</span></li><li id="c4"><b>·</b><span>與原檔格式比對</span></li></ul>
+   <button class="ghost" id="more4" hidden>查看清理詳情</button></div></section>
+ <div class="pipe" id="p4"><i></i></div>
+ <section class="st big" id="s5" data-s="locked"><h2><span class="no">5</span>出件</h2>
+  <div class="intro">乾淨的新檔會從印表機吐出來，取走即可。</div>
+  <div class="body"><div id="printer">
+   <svg viewBox="0 0 240 118" aria-label="印表機">
+    <rect x="50" y="6" width="140" height="36" rx="3" fill="#e9e6dc" stroke="#9c988c" stroke-width="2"/>
+    <rect x="62" y="14" width="116" height="4" fill="#cfcabc"/><rect x="62" y="22" width="90" height="4" fill="#cfcabc"/>
+    <rect x="14" y="40" width="212" height="58" rx="10" fill="#cfcbc0" stroke="#8d897d" stroke-width="2"/>
+    <rect x="28" y="50" width="52" height="14" rx="3" fill="#2a2a2a"/><text x="54" y="60.5" text-anchor="middle" font-size="8" fill="#7CFC9A" id="lcd">待機</text>
+    <circle cx="196" cy="57" r="4" fill="#9a9a9a" id="led"/><circle cx="210" cy="57" r="4" fill="#bbb"/>
+    <rect x="60" y="84" width="120" height="8" rx="3" fill="#161616"/>
+    <rect x="30" y="98" width="180" height="8" rx="3" fill="#a9a597"/></svg>
+   <div id="slotwin"><div id="paper"><b id="pname" style="word-break:break-all">—</b><span class="ln"></span><span class="ln"></span><span class="ln" style="width:70%"></span><span id="pstat" class="ok">已清理</span></div></div></div>
+   <div class="row"><a class="btn" id="dl" href="#" hidden>下載 .docx</a><button class="ghost" id="again" hidden>處理下一份</button></div></div></section>
+</div>
+<div id="fine"><span id="msg"></span><span class="mut">每個發現都只是線索；同一訊號在不同文體意義不同，請搭配人工判斷。</span></div>
+<dialog id="dlg"><div class="dh"><b id="dt">詳情</b><button class="ghost" onclick="dlg.close()">關閉</button></div><div class="dbody" id="dbody"></div></dialog>
+<script>
+const $=id=>document.getElementById(id);let jid=null,info=null,res=null;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function setStep(n){for(let i=1;i<=5;i++){$('s'+i).dataset.s=i<n?'done':i==n?'active':'locked'}for(let i=1;i<=4;i++)$('p'+i).classList.toggle('on',i<n)}
+function ftable(a){if(!a.length)return '<p class="ok">未發現痕跡</p>';return '<table><tr><th>嚴重度</th><th>層</th><th>項目</th><th>位置／說明</th></tr>'+a.map(f=>`<tr><td class="${f.severity}">${f.severity}</td><td>${esc(f.layer)}</td><td>${esc(f.code)}</td><td>${esc(f.where)} ${esc(f.detail)}</td></tr>`).join('')+'</table>'}
+function show(title,html){$('dt').textContent=title;$('dbody').innerHTML=html;$('dlg').showModal()}
+function err(t){$('msg').textContent=t?'錯誤：'+t:''}
+function reset(){jid=info=res=null;err('');$('fname').textContent='尚未收件';$('stamp').classList.remove('show');$('b2').innerHTML='<span class="mut">等待收件…</span>';
+ $('go').disabled=true;$('more4').hidden=true;['c1','c2','c3','c4'].forEach(c=>{$(c).className='';$(c).firstChild.textContent='·'});
+ $('paper').className='';$('printer').classList.remove('busy');$('lcd').textContent='待機';$('led').setAttribute('fill','#9a9a9a');$('dl').hidden=true;$('again').hidden=true;setStep(1)}
+async function upload(file){
+ err('');if(!/\.docx$/i.test(file.name)){err('請選擇 .docx 檔');return}
+ $('flyer').textContent=file.name;$('flyer').classList.remove('go');void $('flyer').offsetWidth;$('flyer').classList.add('go');
+ $('fname').textContent='收件中…';
+ const [r]=await Promise.all([fetch('/api/upload?name='+encodeURIComponent(file.name),{method:'POST',body:file}).then(x=>x.json()),sleep(1000)]);
+ if(r.error){err(r.error);$('fname').textContent='尚未收件';return}
+ info=r;jid=r.id;$('fname').textContent=r.name;$('stamp').classList.add('show');
+ if(!$('author').value)$('author').value=r.defaults.author;if(!$('company').value)$('company').value=r.defaults.company;
+ const cnt={high:0,medium:0,low:0};r.findings.forEach(f=>cnt[f.severity]++);
+ const tot=r.categories.reduce((s,c)=>s+c.count,0);
+ $('b2').innerHTML=`<div class="mut">檔案層痕跡</div><div class="sev"><div class="hi"><b>${cnt.high}</b>高</div><div class="md"><b>${cnt.medium}</b>中</div><div class="lo"><b>${cnt.low}</b>低</div></div>
+  <div class="mut">文字層可疑部位：${tot} 處</div><ul class="tops">${r.categories.slice(0,3).map(c=>`<li><span>[${c.conf}] ${esc(c.label)}</span><b>${c.count}</b></li>`).join('')||'<li>無</li>'}</ul>
+  <div class="row"><button class="ghost" id="d2">查看詳情</button><a class="btn ghost" target="_blank" href="/report/${jid}">完整報告</a></div>`;
+ $('d2').onclick=()=>show('檢測詳情',`<h3>檔案層</h3>${ftable(r.findings)}<h3>文字層可疑部位（信心為啟發式，非機率）</h3>`+(r.categories.length?'<table><tr><th>信心</th><th>類型</th><th>數量</th><th>處理</th></tr>'+r.categories.map(c=>`<tr><td>${c.conf}</td><td>${esc(c.label)}</td><td>${c.count}</td><td>${c.auto?'可自動修':'需人工'}</td></tr>`).join('')+'</table>':'<p class="ok">沒有可疑部位</p>'));
+ $('go').disabled=false;setStep(3)}
+async function clean(){
+ err('');$('go').disabled=true;setStep(4);const L=['c1','c2','c3','c4'];
+ L.forEach(c=>{$(c).className='';$(c).firstChild.textContent='·'});$('c1').className='run';$('c1').firstChild.textContent='●';
+ const q=`id=${jid}&style=${$('style').checked?1:0}&keep_hidden=${$('keep').checked?1:0}&author=${encodeURIComponent($('author').value)}&company=${encodeURIComponent($('company').value)}`;
+ const j=await fetch('/api/clean?'+q,{method:'POST'}).then(x=>x.json()).catch(e=>({error:String(e)}));
+ if(j.error){err(j.error);L.forEach(c=>{$(c).className=''});$('c1').className='bad';$('c1').firstChild.textContent='✕';$('go').disabled=false;setStep(3);return}
+ res=j;const high=j.after.filter(f=>f.severity=='high').length;
+ const notes=[`重建完成，丟棄 ${j.dropped.length} 個部件`,`作者／公司已寫入`,j.after.length?`複掃剩 ${j.after.length} 項（高 ${high}）`:'複掃：未發現痕跡',j.diffs.length?`格式差異 ${j.diffs.length} 項${$('style').checked?'（風格層，文字差異屬預期）':''}`:'格式與原檔一致'];
+ for(let i=0;i<4;i++){const c=$(L[i]);c.className=(i==2&&high)||(i==3&&j.diffs.length&&!$('style').checked)?'bad':'ok2';c.firstChild.textContent=c.className=='bad'?'!':'✓';c.lastChild.textContent=notes[i];await sleep(180)}
+ $('more4').hidden=false;
+ $('more4').onclick=()=>show('清理詳情',`<h3>複掃</h3>${ftable(j.after)}<h3>與原檔比對</h3>`+(j.diffs.length?'<ul>'+j.diffs.map(d=>`<li>${esc(d)}</li>`).join('')+'</ul>':'<p class="ok">段落／樣式／表格／圖片一致</p>')+
+  (Object.keys(j.style_log||{}).length?'<h3>風格層變更</h3><table>'+Object.entries(j.style_log).map(([g,v])=>`<tr><td>${esc(g)}</td><td>${v.count} 處</td><td>${esc((v.examples||[]).join('；'))}</td></tr>`).join('')+'</table>':'')+`<p class="mut">已丟棄部件：${esc(j.dropped.join(', ')||'無')}</p>`);
+ await print()}
+async function print(){
+ setStep(5);$('pname').textContent=info.name.replace(/\.docx$/i,'')+'_clean.docx';$('lcd').textContent='列印中';$('led').setAttribute('fill','#f6a');
+ $('printer').classList.add('busy');$('paper').className='';void $('paper').offsetWidth;$('paper').classList.add('out');
+ await sleep(2400);$('printer').classList.remove('busy');$('lcd').textContent='完成';$('led').setAttribute('fill','#3c3');
+ $('dl').href='/download/'+jid;$('dl').hidden=false;$('again').hidden=false;setStep(5);$('s5').dataset.s='active'}
+const desk=$('desk');desk.onclick=()=>{if(document.getElementById('s1').dataset.s=='active')$('file').click()};
+$('file').onchange=e=>{const f=e.target.files[0];e.target.value='';f&&upload(f)};
+['dragenter','dragover'].forEach(t=>desk.addEventListener(t,e=>{e.preventDefault();desk.classList.add('over')}));
+['dragleave','drop'].forEach(t=>desk.addEventListener(t,e=>{e.preventDefault();desk.classList.remove('over')}));
+desk.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];f&&upload(f)});
+window.addEventListener('dragover',e=>e.preventDefault());window.addEventListener('drop',e=>e.preventDefault());
+$('go').onclick=clean;$('again').onclick=reset;
+</script></body></html>
