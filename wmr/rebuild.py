@@ -214,7 +214,7 @@ def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = N
             if ext in defaults:
                 ct.append('<Default Extension="%s" ContentType="%s"/>' % (ext, defaults[ext]))
         for n in sorted(files):
-            if n in overrides:
+            if n in overrides and n not in ("docProps/core.xml", "docProps/app.xml"):
                 ct.append('<Override PartName="/%s" ContentType="%s"/>' % (n, overrides[n]))
         ct.append('<Override PartName="/docProps/core.xml" ContentType="%s"/>' % CT_CORE)
         ct.append('<Override PartName="/docProps/app.xml" ContentType="%s"/>' % CT_APP)

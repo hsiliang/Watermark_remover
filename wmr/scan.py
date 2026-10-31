@@ -94,6 +94,8 @@ def scan(path: str) -> List[Finding]:
             if a("Company") != COMPANY:
                 add("properties", "company-not-owner", "medium", "app.Company", a("Company") or "(空)")
 
+        word_saved = bool(app is not None and app.find("{%s}Pages" % NS_EP) is not None
+                          and (app.findtext("{%s}Application" % NS_EP) or "").startswith("Microsoft Office Word"))
         # ---- xml / content 層 ----
         parts = [n for n in names if n.startswith("word/") and n.endswith(".xml")]
         rsid_attrs = 0
@@ -118,7 +120,7 @@ def scan(path: str) -> List[Finding]:
                 elif el.tag == W + "bookmarkStart" and el.get(W + "name") == "_GoBack":
                     gobk += 1
                 elif el.tag == W + "rsids":
-                    add("xml", "settings-rsids", "medium", n, "settings 內 rsid 清單")
+                    add("xml", "settings-rsids", "low" if word_saved else "medium", n, "settings 內 rsid 清單")
                 elif el.tag == W + "vanish":
                     add("content", "hidden-text", "high", n, "w:vanish 隱藏文字")
                 elif el.tag == W + "sz" and el.get(W + "val", "").isdigit() and int(el.get(W + "val")) <= 2:
@@ -133,7 +135,7 @@ def scan(path: str) -> List[Finding]:
                     if EXOTIC_SPACE_RE.search(el.text):
                         add("content", "exotic-spaces", "medium", n, "特殊空白")
         if rsid_attrs:
-            add("xml", "rsid-attrs", "medium", "word/*.xml", "rsid 屬性 × %d" % rsid_attrs)
+            add("xml", "rsid-attrs", "low" if word_saved else "medium", "word/*.xml", "rsid 屬性 × %d%s" % (rsid_attrs, "（Word 原生）" if word_saved else ""))
         if proof:
             add("xml", "proofErr", "low", "word/*.xml", "proofErr × %d" % proof)
         if gobk:

@@ -56,3 +56,25 @@ def test_zip_layout(dirty_docx, tmp_path):
     z = zipfile.ZipFile(out)
     assert z.namelist()[0] == "[Content_Types].xml"
     assert all(i.date_time[:3] == (1980, 1, 1) and i.create_system == 0 for i in z.infolist())
+
+
+def test_package_is_strictly_valid(dirty_docx, tmp_path):
+    """Word 比 python-docx 嚴格：PartName 不可重複、關聯目標必須存在。"""
+    import posixpath
+    from lxml import etree
+    out = str(tmp_path / "clean.docx")
+    rebuild(dirty_docx, out)
+    z = zipfile.ZipFile(out)
+    names = set(z.namelist())
+    assert len(z.namelist()) == len(names)
+    ct = etree.fromstring(z.read("[Content_Types].xml"))
+    parts = [e.get("PartName") for e in ct if e.tag.endswith("Override")]
+    assert len(parts) == len(set(parts)), "重複的 Override"
+    assert all(p.lstrip("/") in names for p in parts)
+    for n in names:
+        if not n.endswith(".rels"):
+            continue
+        base = posixpath.dirname(posixpath.dirname(n))
+        for rel in etree.fromstring(z.read(n)):
+            if rel.get("TargetMode") != "External":
+                assert posixpath.normpath(posixpath.join(base, rel.get("Target"))).lstrip("/") in names, (n, rel.get("Target"))

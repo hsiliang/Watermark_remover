@@ -20,6 +20,12 @@ def compare(a: str, b: str):
     """比對原檔與輸出檔的段落、樣式、run 格式、表格數、圖片數。回傳差異清單。"""
     pa, ta, ia = _sig(a)
     pb, tb, ib = _sig(b)
+    # Word 會在結尾表格後補空段落；忽略兩邊尾端的空段落
+    def trim(ps):
+        while ps and not ps[-1][1]:
+            ps = ps[:-1]
+        return ps
+    pa, pb = trim(pa), trim(pb)
     diffs = []
     if (ta, ia) != (tb, ib):
         diffs.append("表格/圖片數不同：%s vs %s" % ((ta, ia), (tb, ib)))

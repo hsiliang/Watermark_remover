@@ -20,7 +20,7 @@ def main(argv=None) -> int:
     c.add_argument("-o", "--out", required=True)
     c.add_argument("--word", action="store_true", help="以 Word for Mac 重存一次（建議）")
     c.add_argument("--keep-hidden", action="store_true", help="不刪除隱藏文字")
-    c.add_argument("--pdf-check", action="store_true", help="用 Word 匯出 PDF 比對頁數")
+    c.add_argument("--page-check", action="store_true", help="用 Word 重存原檔與輸出檔，比對頁數／字數")
     a = ap.parse_args(argv)
 
     if a.cmd == "scan":
@@ -48,12 +48,13 @@ def main(argv=None) -> int:
     print("\n== 清理後 ==\n" + sc.summarize(after))
     diffs = vf.compare(a.file, a.out)
     print("\n== 保真比對 ==\n" + ("\n".join(diffs) if diffs else "段落/樣式/表格/圖片一致"))
-    if a.pdf_check:
+    if a.page_check:
         from . import wordmac
-        from pypdf import PdfReader  # type: ignore
-        p1, p2 = os.path.join(tmp, "a.pdf"), os.path.join(tmp, "b.pdf")
-        wordmac.to_pdf(a.file, p1); wordmac.to_pdf(a.out, p2)
-        print("PDF 頁數：原檔 %d / 輸出 %d" % (len(PdfReader(p1).pages), len(PdfReader(p2).pages)))
+        ref = os.path.join(tmp, "ref_orig.docx")
+        wordmac.resave(a.file, ref)
+        so, sn = wordmac.stats(ref), wordmac.stats(a.out)
+        same = all(so.get(k) == sn.get(k) for k in ("Pages", "Words"))
+        print("Word 頁數/字數：原檔 %s / 輸出 %s -> %s（字元數差異來自移除的隱形字元）" % (so, sn, "一致" if same else "不一致！"))
     print("\n輸出：" + a.out)
     return 0
 
