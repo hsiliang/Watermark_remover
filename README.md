@@ -48,6 +48,8 @@ python3 -m venv .venv && .venv/bin/pip install -r bench/requirements-bench.txt o
 .venv/bin/python bench/table.py r.json            # 對照表
 .venv/bin/python bench/flag_corr.py chunks.json 名稱=文章.docx   # 我的旗標類別 vs 檢測器分數
 ```
+實驗紀錄與結論（含限制）見 `docs/experiments.md`。
+
 **重要**：這些檢測器在長篇正式文體上鑑別力有限（例如 zhv3 會把人類寫的維基百科判成 AI），只適合做「同一篇清理前後」的相對比較。
 
 最後一步（`finalize`）永遠是純本地腳本：作者／最後修改者＝梁曦414155039，公司＝天主教輔仁大學。

@@ -123,3 +123,8 @@ def test_region_rule_does_not_break_taiwan_usage():
     # 有歧義的詞不自動替換
     assert restyle_text("調用警力，激活免疫細胞", Ctx(traditional=True)) == "調用警力，激活免疫細胞"
     assert restyle_text("使用者信息", Ctx(traditional=True)) == "使用者資訊"
+
+
+def test_lexicon_replacement_keeps_part_of_speech():
+    assert restyle_text("補助是推動轉型的助力") == "補助是推動轉型的幫助"     # 名詞 → 名詞/動詞皆可，不可變成「…的協助」
+    assert restyle_text("科技助力產業升級") == "科技幫助產業升級"
