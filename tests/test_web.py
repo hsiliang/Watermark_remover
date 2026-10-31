@@ -33,7 +33,7 @@ def _post(url, data=b""):
 
 def test_full_flow(server, dirty_docx):
     page = urllib.request.urlopen(server + "/").read().decode()
-    assert "Watermark Remover" in page and "文件醫院" in page and "本機自用" not in page and "只在這台電腦" not in page
+    assert "Watermark Remover" in page and "輔大醫院" in page and "本機自用" not in page and "只在這台電腦" not in page
     st, j = _post(server + "/api/upload?name=t.docx", open(dirty_docx, "rb").read())
     assert st == 200 and j["findings"]
     assert b"<html" in urllib.request.urlopen(server + "/report/" + j["id"]).read()
