@@ -12,7 +12,16 @@
 - 資源保守：預設單檔 20MB、同時最多 2 件；只用 `python-docx`、`lxml`。
 - 以上數值皆可用 App Settings 調整。F1 的限制（每日 CPU 分鐘數、記憶體）請以 Azure 官方頁面為準。
 
-## 步驟
+## 實際部署紀錄（2026-10-31）
+- 命令列 `az login` 被租用戶的 security defaults 擋住（AADSTS530035），改在入口網站的 Cloud Shell（暫時性工作階段，不建立儲存體帳戶）執行 `deploy/azure_deploy.sh`。
+- 網址：`https://wmr-9b0686fe.azurewebsites.net/`（資源群組 `wmr-rg`，區域 eastasia，B1）。
+- 驗證：首頁 200、`robots.txt`、`X-Robots-Tag`、非允許 Host 被拒；用只有一句話的測試檔跑完 upload→clean→review→final→download，複掃零發現。**未用真實論文測試**。
+
+## 更新程式後重新部署（Cloud Shell）
+1. 本機：`git archive --format=zip HEAD -o out/wmr.zip`，在 Cloud Shell 上傳覆蓋 `~/wmr.zip`。
+2. `az webapp deploy -g wmr-rg -n wmr-9b0686fe --src-path ~/wmr.zip --type zip`
+
+## 步驟（命令列可用時）
 ```bash
 az login                                   # 瀏覽器登入（學生帳號）
 az account show                            # 確認訂閱名稱與狀態
