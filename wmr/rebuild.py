@@ -73,7 +73,7 @@ def clean_text(s: str) -> str:
     return EXOTIC_SPACE_RE.sub(" ", s)
 
 
-def sanitize_xml(root: etree._Element, partname: str, drop_hidden: bool = True) -> None:
+def sanitize_xml(root: etree._Element, partname: str, drop_hidden: bool = True, style: bool = False) -> None:
     # 屬性：rsid*、paraId、textId
     for el in root.iter():
         if not isinstance(el.tag, str):
@@ -84,6 +84,9 @@ def sanitize_xml(root: etree._Element, partname: str, drop_hidden: bool = True) 
                 del el.attrib[k]
         if el.tag in (W + "t", W + "instrText", W + "delText") and el.text:
             el.text = clean_text(el.text)
+            if style and el.tag == W + "t":
+                from .style import restyle_text
+                el.text = restyle_text(el.text)
         if el.tag in (W + "ins", W + "del", W + "comment", W + "moveFrom", W + "moveTo") and el.get(W + "author") is not None:
             el.set(W + "author", AUTHOR)
         if el.tag == W + "comment" and el.get(W + "initials") is not None:
@@ -157,7 +160,7 @@ def _resolve(base_part: str, target: str) -> str:
     return posixpath.normpath(posixpath.join(base_dir, target)).lstrip("/")
 
 
-def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = None) -> Dict[str, List[str]]:
+def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = None, style: bool = False) -> Dict[str, List[str]]:
     now = now or _dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
     report = {"dropped": [], "kept": []}
     with zipfile.ZipFile(src) as z:
@@ -187,7 +190,7 @@ def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = N
                 data = _ser(root)
             elif low.endswith(".xml") and n.startswith("word/"):
                 root = etree.fromstring(data)
-                sanitize_xml(root, n, drop_hidden)
+                sanitize_xml(root, n, drop_hidden, style)
                 data = _ser(root)
             elif low.endswith(".png"):
                 data = strip_png(data)

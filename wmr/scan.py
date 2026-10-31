@@ -32,7 +32,7 @@ def _parse(z: zipfile.ZipFile, name: str):
         return None
 
 
-def scan(path: str) -> List[Finding]:
+def scan(path: str, style: bool = False) -> List[Finding]:
     out: List[Finding] = []
     add = lambda *a, **k: out.append(Finding(*a, **k))
     with zipfile.ZipFile(path) as z:
@@ -129,6 +129,10 @@ def scan(path: str) -> List[Finding]:
                     add("content", "white-text", "medium", n, "白色文字（可能為隱藏內容）")
                 elif el.tag in (W + "comment",) and (el.get(W + "author") or "") not in ("", AUTHOR):
                     add("package", "comment-author", "high", n, el.get(W + "author"))
+                if style and el.tag == W + "t" and el.text:
+                    from .style import scan_text
+                    for kind, what in scan_text(el.text):
+                        add("style", "style-" + kind, "low", n, what)
                 if el.tag in (W + "t", W + "instrText") and el.text:
                     if INVISIBLE_RE.search(el.text):
                         add("content", "invisible-chars", "high", n, "零寬／bidi／tag 字元 × %d" % len(INVISIBLE_RE.findall(el.text)))
