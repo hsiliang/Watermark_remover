@@ -46,3 +46,26 @@ def dirty_docx(tmp_path):
             zo.writestr(i, zin.read(i.filename))
         zo.writestr("customXml/item99.xml", b"<x/>")
     return str(out)
+
+
+@pytest.fixture
+def docxjs_like(dirty_docx, tmp_path):
+    """模擬 docx-js 產物：雜湊圖檔名、空的 rels、ZIP 目錄條目。"""
+    import hashlib
+    out = tmp_path / "docxjs.docx"
+    h = hashlib.sha1(b"x").hexdigest()
+    with zipfile.ZipFile(dirty_docx) as zin, zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zo:
+        zo.writestr(zipfile.ZipInfo("word/"), b"")
+        for i in zin.infolist():
+            data = zin.read(i.filename)
+            name = i.filename
+            if name == "word/media/image1.png":
+                name = "word/media/%s.png" % h
+            if name == "word/_rels/document.xml.rels":
+                data = data.replace(b"media/image1.png", ("media/%s.png" % h).encode())
+            if name == "[Content_Types].xml":
+                pass
+            zo.writestr(name, data)
+        zo.writestr("word/_rels/footer1.xml.rels",
+                    b'<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>')
+    return str(out)

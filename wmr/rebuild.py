@@ -170,6 +170,21 @@ def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = N
         overrides = {e.get("PartName").lstrip("/"): e.get("ContentType") for e in ct_root if e.tag == "{%s}Override" % NS_CT}
 
         kept = [n for n in names if n != "[Content_Types].xml" and n != "_rels/.rels" and not _dropped(n)]
+        # 圖檔改成 Word 風格的 imageN.ext（依在 document rels 中出現的順序，其餘依名稱排序）
+        media = [n for n in kept if n.startswith("word/media/")]
+        order_hint = {}
+        try:
+            rels = etree.fromstring(z.read("word/_rels/document.xml.rels"))
+            for r in rels:
+                tgt = r.get("Target") or ""
+                if tgt.startswith("media/"):
+                    order_hint.setdefault("word/" + tgt, len(order_hint))
+        except KeyError:
+            pass
+        media.sort(key=lambda n: (order_hint.get(n, 10 ** 6), n))
+        rename = {}
+        for i, n in enumerate(media, 1):
+            rename[n] = "word/media/image%d.%s" % (i, n.rsplit(".", 1)[-1].lower())
         kept_set = set(kept)
         report["dropped"] = [n for n in names if n not in kept_set and n not in ("[Content_Types].xml", "_rels/.rels")]
 
@@ -187,6 +202,13 @@ def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = N
                         drop = _resolve(n, tgt) not in kept_set
                     if drop:
                         root.remove(rel)
+                    elif rel.get("TargetMode") != "External":
+                        full = _resolve(n, tgt)
+                        if full in rename:
+                            base = posixpath.dirname(posixpath.dirname(n))
+                            rel.set("Target", posixpath.relpath(rename[full], base or "."))
+                if len(root) == 0:
+                    continue  # Word 不會產生空的 .rels
                 data = _ser(root)
             elif low.endswith(".xml") and n.startswith("word/"):
                 root = etree.fromstring(data)
@@ -196,7 +218,7 @@ def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = N
                 data = strip_png(data)
             elif low.endswith((".jpg", ".jpeg")):
                 data = strip_jpeg(data)
-            files[n] = data
+            files[rename.get(n, n)] = data
 
         # 根關聯與內容型別
         root_rels = (

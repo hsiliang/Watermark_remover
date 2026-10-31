@@ -78,3 +78,19 @@ def test_package_is_strictly_valid(dirty_docx, tmp_path):
         for rel in etree.fromstring(z.read(n)):
             if rel.get("TargetMode") != "External":
                 assert posixpath.normpath(posixpath.join(base, rel.get("Target"))).lstrip("/") in names, (n, rel.get("Target"))
+
+
+def test_scan_detects_docxjs_structure(docxjs_like):
+    c = codes(docxjs_like)
+    assert {"media-hash-name", "empty-rels", "zip-directory-entries"} <= c
+
+
+def test_rebuild_normalizes_docxjs_structure(docxjs_like, tmp_path):
+    out = str(tmp_path / "c.docx")
+    rebuild(docxjs_like, out)
+    z = zipfile.ZipFile(out)
+    media = [n for n in z.namelist() if n.startswith("word/media/")]
+    assert media == ["word/media/image1.png"], media
+    assert not [n for n in z.namelist() if n.endswith("/")]
+    assert [f for f in scan(out) if f.severity in ("high", "medium", "low") and f.layer != "xml"] == []
+    assert len(Document(out).inline_shapes) == 1

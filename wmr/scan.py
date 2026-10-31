@@ -51,6 +51,17 @@ def scan(path: str, style: bool = False) -> List[Finding]:
         if any(i.date_time[:3] != (1980, 1, 1) for i in infos):
             add("zip", "zip-timestamps-not-1980", "low", "archive", "Word 產物的 ZIP 時間戳為 1980-01-01，此檔為程式庫寫入時間")
 
+        if any(n.endswith("/") for n in names):
+            add("zip", "zip-directory-entries", "low", "archive", "ZIP 含目錄條目（Word 不會寫入）")
+        for n in names:
+            if n.startswith("word/media/") and re.fullmatch(r"[0-9a-f]{32,64}", n.rsplit("/", 1)[-1].rsplit(".", 1)[0], re.I):
+                add("package", "media-hash-name", "medium", n, "圖檔以雜湊命名（Word 為 imageN.ext）")
+            if n.endswith(".rels"):
+                try:
+                    if len(etree.fromstring(z.read(n))) == 0:
+                        add("package", "empty-rels", "low", n, "空的 .rels（Word 不會產生）")
+                except etree.XMLSyntaxError:
+                    pass
         # ---- package 層 ----
         for n in names:
             if n.endswith("/"):
