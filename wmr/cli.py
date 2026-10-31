@@ -66,6 +66,7 @@ def main(argv=None) -> int:
     ap_.add_argument("--force", action="store_true", help="含超連結／欄位等也強制替換（可能破壞該段結構）")
     w = sub.add_parser("web", help="啟動本機網頁介面（僅 127.0.0.1）")
     w.add_argument("--port", type=int, default=8765)
+    w.add_argument("--host", default="127.0.0.1", help="綁定位址（預設只限本機；部署用 0.0.0.0，並以 WMR_ALLOWED_HOSTS 設定允許的網域）")
     w.add_argument("--keep", action="store_true", help="啟動時不清除上次的暫存檔")
     c = sub.add_parser("clean", help="掃描→重建→(選用 Word 重存)→改屬性→複掃→保真比對")
     c.add_argument("file")
@@ -88,7 +89,7 @@ def main(argv=None) -> int:
 
     if a.cmd == "web":
         from . import web
-        web.serve(a.port, clear=not a.keep)
+        web.serve(a.port, clear=not a.keep, host=a.host)
         return 0
 
     if a.cmd == "export":

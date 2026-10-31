@@ -112,3 +112,60 @@ def test_review_copy_and_final_flow(server, tmp_path):
     # 沒上傳待修版（跳過人工修改）也能出最終版
     st, f2 = _post(server + "/api/final?id=%s&style=0&keep_hidden=0" % j["id"])
     assert st == 200 and f2["removed_comments"] == 0
+
+
+def test_allowed_hosts_env_list(server, monkeypatch):
+    monkeypatch.setattr(web, "ALLOWED_HOSTS", {"127.0.0.1", "localhost", "my.example.net"})
+    req = urllib.request.Request(server + "/", headers={"Host": "my.example.net"})
+    assert urllib.request.urlopen(req).status == 200
+    req = urllib.request.Request(server + "/", headers={"Host": "evil.example.com"})
+    with pytest.raises(urllib.error.HTTPError) as e:
+        urllib.request.urlopen(req)
+    assert e.value.code == 403
+
+
+def test_password_gate(server, monkeypatch, dirty_docx):
+    monkeypatch.setattr(web, "PASSWORD", "s3cret")
+    page = urllib.request.urlopen(server + "/").read().decode()
+    assert "密碼" in page and "Watermark Remover" not in page          # 未登入只看到登入頁
+    st, j = _post(server + "/api/upload?name=t.docx", open(dirty_docx, "rb").read())
+    assert st == 401
+    data = urllib.parse.urlencode({"password": "wrong"}).encode()
+    with pytest.raises(urllib.error.HTTPError) as e:
+        urllib.request.urlopen(urllib.request.Request(server + "/login", data=data, method="POST"))
+    assert e.value.code == 401
+    class NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, *a, **k):
+            return None
+    op = urllib.request.build_opener(NoRedirect)
+    good = urllib.parse.urlencode({"password": "s3cret"}).encode()
+    with pytest.raises(urllib.error.HTTPError) as e:
+        op.open(urllib.request.Request(server + "/login", data=good, method="POST"))
+    assert e.value.code == 303
+    cookie = e.value.headers["Set-Cookie"].split(";")[0]
+    assert "HttpOnly" in e.value.headers["Set-Cookie"] and "SameSite=Strict" in e.value.headers["Set-Cookie"]
+    req = urllib.request.Request(server + "/", headers={"Cookie": cookie})
+    assert b"Watermark Remover" in urllib.request.urlopen(req).read()
+    req = urllib.request.Request(server + "/api/upload?name=t.docx", data=open(dirty_docx, "rb").read(), method="POST", headers={"Cookie": cookie})
+    assert urllib.request.urlopen(req).status == 200
+
+
+def test_purge_expired_and_headers(server, monkeypatch, tmp_path):
+    import os, time
+    monkeypatch.setattr(web, "TTL_SECONDS", 60)
+    os.makedirs(web.ROOT, exist_ok=True)
+    old, new = os.path.join(web.ROOT, "a" * 16), os.path.join(web.ROOT, "b" * 16)
+    os.makedirs(old); os.makedirs(new)
+    os.utime(old, (time.time() - 3600, time.time() - 3600))
+    assert web.purge_expired() == 1 and not os.path.exists(old) and os.path.exists(new)
+    r = urllib.request.urlopen(server + "/")
+    assert r.headers["X-Robots-Tag"].startswith("noindex") and r.headers["X-Content-Type-Options"] == "nosniff"
+    assert b"Disallow: /" in urllib.request.urlopen(server + "/robots.txt").read()
+
+
+def test_busy_returns_503(server, monkeypatch):
+    import threading as th
+    monkeypatch.setattr(web, "_BUSY", th.BoundedSemaphore(1))
+    web._BUSY.acquire()
+    st, j = _post(server + "/api/upload?name=a.docx", b"PK")
+    assert st == 503

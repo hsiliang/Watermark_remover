@@ -1,5 +1,2 @@
 python-docx>=1.1
 lxml>=5
-pytest>=8
-pymupdf>=1.24
-pillow>=10

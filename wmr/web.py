@@ -1,23 +1,49 @@
-"""本機網頁介面（僅綁 127.0.0.1；標準庫，無額外相依）。
+"""網頁介面（預設只綁 127.0.0.1；標準庫，無額外相依）。
+
+部署時以環境變數設定（皆可選）：
+  WMR_ALLOWED_HOSTS  額外允許的 Host（逗號分隔，例如 myapp.azurewebsites.net）
+  WMR_MAX_MB         單檔上限（預設 100）
+  WMR_TTL_MIN        暫存檔保留分鐘數（預設 0＝不自動清除）
+  WMR_MAX_CONCURRENT 同時處理上限（預設 2）
+  WMR_DATA_DIR       暫存資料夾（預設 out/web）
+  WMR_PASSWORD       設定後啟用共用密碼登入（未設定＝不需登入）
+  WMR_SECRET         簽 cookie 的密鑰（預設由密碼衍生）
 
 流程：上傳 docx → 檢測＋可疑部位統計 → 按下清理 → 下載。
 清理使用的仍是純本地的 rebuild／finalize，不呼叫任何 AI 或 Word。
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import os
 import re
 import secrets
 import shutil
+import sys
+import threading
+import time
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .common import AUTHOR, COMPANY, clean_identity
 from . import comments as cm, finalize, rebuild as rb, report, scan as sc, suspect, verify as vf
 
-ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "out", "web")
-MAX_BYTES = 100 * 1024 * 1024
+def _env_int(name: str, default: int) -> int:
+    try:
+        return max(0, int(os.environ.get(name, default)))
+    except ValueError:
+        return default
+
+
+ROOT = os.environ.get("WMR_DATA_DIR") or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "out", "web")
+MAX_BYTES = _env_int("WMR_MAX_MB", 100) * 1024 * 1024
+TTL_SECONDS = _env_int("WMR_TTL_MIN", 0) * 60
+ALLOWED_HOSTS = {"127.0.0.1", "localhost"} | {h.strip().lower() for h in os.environ.get("WMR_ALLOWED_HOSTS", "").split(",") if h.strip()}
+PASSWORD = os.environ.get("WMR_PASSWORD", "")
+_BUSY = threading.BoundedSemaphore(max(1, _env_int("WMR_MAX_CONCURRENT", 2)))
+SAFE_ERRORS = (ValueError, FileNotFoundError)
 _ID = re.compile(r"^[0-9a-f]{16}$")
 SKIP = ("參考文獻", "參考資料", "References", "Bibliography")
 
@@ -130,6 +156,32 @@ def do_final(jid: str, edited: bytes, style: bool, keep_hidden: bool, author: st
             "removed_comments": removed, "risk_after": _risk(after, rv)}
 
 
+def _token() -> str:
+    key = (os.environ.get("WMR_SECRET") or PASSWORD).encode("utf-8")
+    return hmac.new(hashlib.sha256(key).digest(), b"wmr-auth-v1", hashlib.sha256).hexdigest()
+
+
+LOGIN_PAGE = ("<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>登入</title>"
+              "<body style='font:16px -apple-system,sans-serif;background:#2b2d42;color:#fff;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0'>"
+              "<form method=post action=/login style='background:#fff;color:#222;padding:28px;border-radius:12px;width:280px'>"
+              "<h2 style='margin:0 0 12px'>輔大醫院・掛號前驗證</h2>%s<input type=password name=password autofocus placeholder='密碼' "
+              "style='width:100%%;padding:8px;box-sizing:border-box;margin:8px 0'><button style='width:100%%;padding:8px'>進入</button></form>")
+
+
+def purge_expired(now=None) -> int:
+    """刪除超過 TTL 的暫存工作資料夾；TTL=0 時不做事。回傳刪除數。"""
+    if not TTL_SECONDS or not os.path.isdir(ROOT):
+        return 0
+    now = now or time.time()
+    n = 0
+    for name in os.listdir(ROOT):
+        d = os.path.join(ROOT, name)
+        if _ID.match(name) and os.path.isdir(d) and now - os.path.getmtime(d) > TTL_SECONDS:
+            shutil.rmtree(d, ignore_errors=True)
+            n += 1
+    return n
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "wmr-web"
 
@@ -137,15 +189,27 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def _host_ok(self) -> bool:
-        # 擋 DNS rebinding：只接受 localhost／127.0.0.1
-        host = (self.headers.get("Host") or "").split(":")[0]
-        return host in ("127.0.0.1", "localhost")
+        # 擋 DNS rebinding：只接受 localhost／127.0.0.1 與 WMR_ALLOWED_HOSTS
+        host = (self.headers.get("Host") or "").split(":")[0].lower()
+        return host in ALLOWED_HOSTS
+
+    def _authed(self) -> bool:
+        if not PASSWORD:
+            return True
+        for part in (self.headers.get("Cookie") or "").split(";"):
+            k, _, v = part.strip().partition("=")
+            if k == "wmr_auth" and hmac.compare_digest(v, _token()):
+                return True
+        return False
 
     def _send(self, code, body: bytes, ctype="text/html; charset=utf-8", extra=None):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("X-Robots-Tag", "noindex, nofollow")
         for k, v in (extra or {}).items():
             self.send_header(k, v)
         self.end_headers()
@@ -158,6 +222,12 @@ class Handler(BaseHTTPRequestHandler):
         if not self._host_ok():
             return self._send(403, b"forbidden")
         path = urllib.parse.urlparse(self.path).path
+        if path == "/robots.txt":
+            return self._send(200, b"User-agent: *\nDisallow: /\n", "text/plain; charset=utf-8")
+        if not self._authed():
+            if path.startswith("/api/"):
+                return self._json({"error": "請先登入"}, 401)
+            return self._send(200, (LOGIN_PAGE % "").encode("utf-8"))
         try:
             if path == "/":
                 return self._send(200, PAGE.encode("utf-8"))
@@ -182,11 +252,18 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(403, b"forbidden")
         u = urllib.parse.urlparse(self.path)
         q = urllib.parse.parse_qs(u.query)
+        if u.path == "/login":
+            return self._login()
+        if not self._authed():
+            return self._json({"error": "請先登入"}, 401)
+        if not _BUSY.acquire(blocking=False):
+            return self._json({"error": "伺服器忙碌中，請稍後再試"}, 503)
         try:
             n = int(self.headers.get("Content-Length") or 0)
             if n > MAX_BYTES:
-                return self._json({"error": "檔案過大（上限 100MB）"}, 413)
+                return self._json({"error": "檔案過大（上限 %d MB）" % (MAX_BYTES // 1048576)}, 413)
             body = self.rfile.read(n)
+            purge_expired()
             if u.path == "/api/upload":
                 name = q.get("name", ["document.docx"])[0]
                 if not body[:2] == b"PK":
@@ -204,17 +281,54 @@ class Handler(BaseHTTPRequestHandler):
                     return self._json({"error": "這不是 .docx 檔（不是 zip 格式）"}, 400)
                 return self._json(do_final(q.get("id", [""])[0], body, flag("style"), flag("keep_hidden"),
                                            q.get("author", [""])[0], q.get("company", [""])[0]))
-        except Exception as e:  # 回報給使用者而不是讓連線斷掉
-            return self._json({"error": "%s: %s" % (type(e).__name__, e)}, 500)
+        except SAFE_ERRORS as e:
+            msg = str(e)
+            if isinstance(e, FileNotFoundError) and TTL_SECONDS:
+                msg = "工作已過期（暫存只保留 %d 分鐘），請重新掛號" % (TTL_SECONDS // 60)
+            return self._json({"error": msg}, 500)
+        except Exception as e:  # 不把內部路徑等細節回給使用者
+            print("wmr web error:", type(e).__name__, e, file=sys.stderr)
+            return self._json({"error": "處理失敗（%s）" % type(e).__name__}, 500)
+        finally:
+            _BUSY.release()
         self._send(404, b"not found")
 
+    def _login(self):
+        if not PASSWORD:
+            return self._send(404, b"not found")
+        n = min(int(self.headers.get("Content-Length") or 0), 4096)
+        form = urllib.parse.parse_qs(self.rfile.read(n).decode("utf-8", "ignore"))
+        pw = (form.get("password") or [""])[0]
+        if hmac.compare_digest(hashlib.sha256(pw.encode()).digest(), hashlib.sha256(PASSWORD.encode()).digest()):
+            secure = "; Secure" if (self.headers.get("X-Forwarded-Proto") or "").lower() == "https" else ""
+            self.send_response(303)
+            self.send_header("Location", "/")
+            self.send_header("Set-Cookie", "wmr_auth=%s; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800%s" % (_token(), secure))
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        time.sleep(1)   # 減緩暴力猜測
+        self._send(401, (LOGIN_PAGE % "<p style='color:#c00'>密碼不正確</p>").encode("utf-8"))
 
-def serve(port: int = 8765, clear: bool = True) -> None:
+
+def serve(port: int = 8765, clear: bool = True, host: str = "127.0.0.1") -> None:
     if clear and os.path.isdir(ROOT):
         shutil.rmtree(ROOT)       # 上次的暫存檔含使用者文件，啟動時清掉
     os.makedirs(ROOT, exist_ok=True)
-    srv = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    print("本機網頁介面：http://127.0.0.1:%d/ （僅本機可連；Ctrl+C 結束）" % port)
+    if TTL_SECONDS:
+        def _loop():
+            while True:
+                time.sleep(60)
+                try:
+                    purge_expired()
+                except OSError:
+                    pass
+        threading.Thread(target=_loop, daemon=True).start()
+    srv = ThreadingHTTPServer((host, port), Handler)
+    loop = host in ("127.0.0.1", "localhost")
+    print("網頁介面：http://%s:%d/ （%s；Ctrl+C 結束）" % (host, port, "僅本機可連" if loop else "對外開放"))
+    if not loop and not PASSWORD:
+        print("警告：未設定 WMR_PASSWORD，任何知道網址的人都能上傳與下載文件。", file=sys.stderr)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

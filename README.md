@@ -49,7 +49,7 @@
 ```bash
 cd Watermark_remover
 python3 -m venv .venv && source .venv/bin/activate     # 建議使用虛擬環境
-pip install -r requirements.txt
+pip install -r requirements-dev.txt     # 只跑網頁／清理用 requirements.txt 即可；--render-check 與測試需要 dev 版
 ```
 
 選用的外部軟體：
