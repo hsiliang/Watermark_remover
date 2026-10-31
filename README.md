@@ -10,7 +10,7 @@ python3 -m wmr clean 檔案.docx -o out/乾淨.docx --render-check   # 建議用
 ```
 選項：
 - `--render-check`：用 LibreOffice 渲染原檔與輸出，逐頁比對畫面（格式保真的直接證據）
-- `--style`：文字風格層（規則／詞表式，無 AI；跨 run 替換；不動參考文獻；會印出變更日誌）。`--style-rules artefact,filler,...` 可選群組，另有 `quotes`（「」化，預設關）
+- `--style`：文字風格層（規則／詞表式，無 AI；跨 run 替換；不動參考文獻；會印出變更日誌）。`--style-rules artefact,filler,...` 可選群組，另有 `quotes`（「」化，預設關）。套話（綜上所述、總而言之、總的來說、值得注意的是等）只在「句首或逗號後、後面接逗號、不在引號內」時刪除，否則不動（避免殘句與改動引文）；破折號寫法（「綜上所述——」）不會觸發。
 - `--word`：再用 Word for Mac 重存。**選用**：Word 會改寫樣式定義，實測在真實文件上
   LibreOffice 渲染與原檔不同（58 頁 vs 56 頁），請務必搭配 `--render-check`
 - `--page-check`：用 Word 重存原檔與輸出，比對 Word 計算的頁數／字數
@@ -66,3 +66,5 @@ scan → rebuild（白名單重建）→ [Word 重存] → finalize（改屬性�
 - 掃描器反映我的假設，不等於同學的偵測系統
 - 此機器 Word 的 `save as` 不可用，重存改用「開啟→標記已修改→close saving yes」
 - 待做：網頁介面（目前僅 CLI）
+
+文件層級指標含「每百字括號」（僅供參考，未設門檻：沒有資料可定多少算偏低）。
