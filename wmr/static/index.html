@@ -63,7 +63,7 @@ svg{overflow:visible}svg *{stroke-linejoin:round;stroke-linecap:round}
 #doc1,#doc6{transition:transform .4s,opacity .4s;transform-box:fill-box;transform-origin:center}
 #doc1.gone,#doc6.gone{transform:scale(.1);opacity:0}
 #lamp{position:absolute;left:610px;top:114px;width:210px;height:76px;color:#ff4d4d;font-family:Menlo,Consolas,monospace;text-align:center;line-height:1.1}
-#lamp b{display:block;font-size:34px;letter-spacing:4px;text-shadow:0 0 8px #ff4d4d}
+#lamp b{display:block;font-size:28px;letter-spacing:2px;text-shadow:0 0 8px #ff4d4d}
 #lamp span{font-size:16px;color:#ffd166;font-family:inherit;font-weight:700}
 #lamp.busy b{animation:blink .7s steps(2) infinite}
 @keyframes blink{50%{opacity:.25}}
@@ -232,7 +232,7 @@ th{background:#f3eedf}
     <dl><dt>科　別</dt><dd>AI 痕跡科（門診）</dd><dt>病　人</dt><dd id="slipName">（尚未收件）</dd><dt>狀　態</dt><dd id="slipStat">待收件</dd><dt>醫　師</dt><dd>值班醫師（看心情）</dd></dl>
     <div class="stamp" id="stamp1" style="right:16px;bottom:18px">已收件</div>
    </div>
-   <div id="lamp"><b id="lampNo">0042</b><span id="lampTx">請掛號</span></div>
+   <div id="lamp"><b id="lampNo">414155039</b><span id="lampTx">請掛號</span></div>
    <button class="hit" id="hit1" style="left:1054px;top:226px;width:142px;height:110px" aria-label="點擊選擇 .docx 檔案（櫃檯窗口）" title="點擊選擇 .docx 檔案"></button>
    <div class="stamp" id="stamp1w" style="left:1062px;top:190px">已收件</div>
    <div id="rej1" class="reject" style="left:965px;top:350px;width:320px" hidden>本窗口只受理 .docx<small id="rej1n"></small></div>
@@ -723,10 +723,10 @@ function pick(n){if(dropScene()!==n)return;const fi=$('fileIn');fi.dataset.n=n;f
 $('fileIn').onchange=e=>{const f=e.target.files[0],n=+e.target.dataset.n;e.target.value='';if(f&&dropScene()===n){armDraw(n,ARM[n].rest[0],ARM[n].rest[1],true);deliver(n,f)}};
 
 /* ============ S1 上傳 ============ */
-function reset1(){armRest(1);$('slipName').textContent='（尚未收件）';$('slipStat').textContent='待收件';$('stamp1').classList.remove('show');$('stamp1w').classList.remove('show');$('rej1').hidden=true;$('lampNo').textContent='0042';$('lampTx').textContent='請掛號';$('lamp').classList.remove('busy');$('clerkSay').textContent='下一位～（打哈欠）'}
+function reset1(){armRest(1);$('slipName').textContent='（尚未收件）';$('slipStat').textContent='待收件';$('stamp1').classList.remove('show');$('stamp1w').classList.remove('show');$('rej1').hidden=true;$('lampNo').textContent='414155039';$('lampTx').textContent='請掛號';$('lamp').classList.remove('busy');$('clerkSay').textContent='下一位～（打哈欠）'}
 async function upload(f){
  const t=TOKEN;S.busy=true;$('slipName').textContent=f.name;$('slipStat').textContent='收件中…';$('stamp1w').classList.add('show');
- $('lamp').classList.add('busy');$('lampNo').textContent='0042';$('lampTx').textContent='處理中';$('clerkSay').textContent='收到，送檢！';
+ $('lamp').classList.add('busy');$('lampNo').textContent='414155039';$('lampTx').textContent='處理中';$('clerkSay').textContent='收到，送檢！';
  try{
   const r=await api('/api/upload?name='+enc(f.name),f);if(t!==TOKEN)return;
   setInfo(r);$('slipName').textContent=r.name;$('slipStat').textContent='已收件，請至檢測室';$('stamp1').classList.add('show');
