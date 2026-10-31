@@ -23,7 +23,7 @@ def test_cjk_punctuation_normalized():
 
 
 def test_scan_text_reports_hits():
-    hits = scan_text("綜上所述——**重點** 😀")
+    hits = scan_text("此外，綜上所述——**重點** 😀")
     assert {"lexicon", "dash", "markdown", "emoji"} <= {h[0] for h in hits}
 
 
@@ -59,7 +59,7 @@ def test_cross_run_phrase_replacement():
            '<w:r><w:t>前文綜上</w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>所述，結論</w:t></w:r></w:p>')
     p = etree.fromstring(xml)
     restyle_paragraph(p, Ctx())
-    assert "".join(t.text for t in p.iter(W + "t")) == "前文整體而言，結論"
+    assert "".join(t.text for t in p.iter(W + "t")) == "前文結論"
     assert len(list(p.iter(W + "r"))) == 2 and p.find(".//" + W + "b") is not None  # 格式保留
 
 

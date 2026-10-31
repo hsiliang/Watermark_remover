@@ -414,6 +414,7 @@ def analyze(path: str, skip_headings=("參考文獻", "參考資料", "Reference
         "以連接詞開頭的句子比例": round(conn_total / sent_total, 2),
         "每百字「的」": round(doc_text.count("的") * 100.0 / max(1, len(doc_text)), 2),
         "每百字逗號／頓號": round((doc_text.count("，") + doc_text.count("、")) * 100.0 / max(1, len(doc_text)), 2),
+        "每百字括號（半形／全形）": round(len(re.findall(r"[（(]", doc_text)) * 100.0 / max(1, len(doc_text)), 2),
         "破折號數": len(re.findall("——|—", doc_text)),
         "具體資訊稀少的段落比例": round(generic_share, 2),
         "文件判定為繁體": trad,
