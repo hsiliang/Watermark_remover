@@ -63,6 +63,9 @@ def main(argv=None) -> int:
     ap_.add_argument("edits")
     ap_.add_argument("-o", "--out", required=True)
     ap_.add_argument("--force", action="store_true", help="含超連結／欄位等也強制替換（可能破壞該段結構）")
+    w = sub.add_parser("web", help="啟動本機網頁介面（僅 127.0.0.1）")
+    w.add_argument("--port", type=int, default=8765)
+    w.add_argument("--keep", action="store_true", help="啟動時不清除上次的暫存檔")
     c = sub.add_parser("clean", help="掃描→重建→(選用 Word 重存)→改屬性→複掃→保真比對")
     c.add_argument("file")
     c.add_argument("-o", "--out", required=True)
@@ -79,6 +82,11 @@ def main(argv=None) -> int:
         f = sc.scan(a.file, style=a.style)
         print(json.dumps(sc.as_dicts(f), ensure_ascii=False, indent=2) if a.json else sc.summarize(f))
         return 1 if any(x.severity == "high" for x in f) else 0
+
+    if a.cmd == "web":
+        from . import web
+        web.serve(a.port, clear=not a.keep)
+        return 0
 
     if a.cmd == "export":
         from . import edits

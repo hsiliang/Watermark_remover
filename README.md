@@ -68,3 +68,9 @@ scan → rebuild（白名單重建）→ [Word 重存] → finalize（改屬性�
 - 待做：網頁介面（目前僅 CLI）
 
 文件層級指標含「每百字括號」（僅供參考，未設門檻：沒有資料可定多少算偏低）。
+
+## 網頁介面（本機）
+`python3 -m wmr web [--port 8765]`，瀏覽器開 http://127.0.0.1:8765/ ：拖入 .docx → 檔案層檢測＋可疑部位統計（可開完整報告）→ 勾選風格層／保留隱藏文字 → 清理 → 下載。
+- 只綁 127.0.0.1，且拒絕 Host 不是 localhost／127.0.0.1 的請求（防 DNS rebinding）；無登入，勿改綁其他位址。
+- 清理步驟與 CLI 的 `clean` 相同（純本地 rebuild＋finalize），不含 Word 重存、LibreOffice 渲染比對、`export/apply`（這些仍用 CLI）。
+- 暫存檔放 `out/web/<id>/`（含你的文件），每次啟動會清空；`--keep` 可保留。
