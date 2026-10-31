@@ -73,7 +73,7 @@ def clean_text(s: str) -> str:
     return EXOTIC_SPACE_RE.sub(" ", s)
 
 
-def sanitize_xml(root: etree._Element, partname: str, drop_hidden: bool = True, style: bool = False) -> None:
+def sanitize_xml(root: etree._Element, partname: str, drop_hidden: bool = True, style=None) -> None:
     # 屬性：rsid*、paraId、textId
     for el in root.iter():
         if not isinstance(el.tag, str):
@@ -84,9 +84,6 @@ def sanitize_xml(root: etree._Element, partname: str, drop_hidden: bool = True, 
                 del el.attrib[k]
         if el.tag in (W + "t", W + "instrText", W + "delText") and el.text:
             el.text = clean_text(el.text)
-            if style and el.tag == W + "t":
-                from .style import restyle_text
-                el.text = restyle_text(el.text)
         if el.tag in (W + "ins", W + "del", W + "comment", W + "moveFrom", W + "moveTo") and el.get(W + "author") is not None:
             el.set(W + "author", AUTHOR)
         if el.tag == W + "comment" and el.get(W + "initials") is not None:
@@ -120,6 +117,11 @@ def sanitize_xml(root: etree._Element, partname: str, drop_hidden: bool = True, 
             else:
                 p.text = (p.text or "") + el.tail
         p.remove(el)
+
+    if style is not None:
+        from .style import restyle_paragraph
+        for para in list(root.iter(W + "p")):
+            restyle_paragraph(para, style)
 
 
 def _ser(root: etree._Element) -> bytes:
@@ -160,10 +162,19 @@ def _resolve(base_part: str, target: str) -> str:
     return posixpath.normpath(posixpath.join(base_dir, target)).lstrip("/")
 
 
-def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = None, style: bool = False) -> Dict[str, List[str]]:
+def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = None, style=False) -> Dict[str, List[str]]:
     now = now or _dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
     report = {"dropped": [], "kept": []}
     with zipfile.ZipFile(src) as z:
+        # style: False/None → 不啟用；True → 預設群組；也可直接傳入 style.Ctx
+        ctx = None
+        if style:
+            from .style import Ctx, is_traditional
+            if isinstance(style, Ctx):
+                ctx = style
+            else:
+                doc_text = "".join(t.text or "" for t in etree.fromstring(z.read("word/document.xml")).iter(W + "t"))
+                ctx = Ctx(traditional=is_traditional(doc_text))
         names = [n for n in z.namelist() if not n.endswith("/")]
         ct_root = etree.fromstring(z.read("[Content_Types].xml"))
         defaults = {e.get("Extension").lower(): e.get("ContentType") for e in ct_root if e.tag == "{%s}Default" % NS_CT}
@@ -212,7 +223,10 @@ def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = N
                 data = _ser(root)
             elif low.endswith(".xml") and n.startswith("word/"):
                 root = etree.fromstring(data)
-                sanitize_xml(root, n, drop_hidden, style)
+                if ctx is not None and n == "word/document.xml":
+                    from .suspect import _style_names, reference_paragraph_set
+                    ctx.skip = reference_paragraph_set(root, _style_names(z), ("參考文獻", "參考資料", "References", "Bibliography"))
+                sanitize_xml(root, n, drop_hidden, ctx)
                 data = _ser(root)
             elif low.endswith(".png"):
                 data = strip_png(data)
@@ -256,6 +270,7 @@ def rebuild(src: str, dst: str, drop_hidden: bool = True, now: Optional[str] = N
             return (2, tail.index(n), n)
         return (1, 0, n)
 
+    report["style_ctx"] = ctx
     with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as out:
         for n in sorted(files, key=order):
             zi = zipfile.ZipInfo(n, date_time=(1980, 1, 1, 0, 0, 0))
