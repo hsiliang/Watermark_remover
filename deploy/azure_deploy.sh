@@ -34,7 +34,7 @@ az appservice plan create -g "$RG" -n wmr-plan --is-linux --sku "$SKU" -l "$REGI
 az webapp create -g "$RG" -p wmr-plan -n "$APP" --runtime "PYTHON:3.11" -o none
 az webapp config appsettings set -g "$RG" -n "$APP" -o none --settings \
   SCM_DO_BUILD_DURING_DEPLOYMENT=true WEBSITES_PORT=8000 \
-  WMR_ALLOWED_HOSTS="$APP.azurewebsites.net" WMR_MAX_MB=20 WMR_TTL_MIN=30 WMR_MAX_CONCURRENT=2 WMR_DATA_DIR=/tmp/wmr
+  WMR_ALLOWED_HOSTS="$APP.azurewebsites.net" WMR_MAX_MB=20 WMR_TTL_MIN=240 WMR_MAX_CONCURRENT=2 WMR_DATA_DIR=/tmp/wmr
 az webapp config set -g "$RG" -n "$APP" -o none --startup-file "python -m wmr web --host 0.0.0.0 --port 8000"
 az webapp update -g "$RG" -n "$APP" --https-only true -o none
 echo "部署中（建置約 1–3 分鐘）…"

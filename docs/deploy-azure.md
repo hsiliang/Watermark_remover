@@ -3,7 +3,7 @@
 原則：**不新增成本**。程式本身以環境變數設定，B1 與 F1 用同一份程式，改方案只需改 App Service Plan 的 SKU。
 
 ## 已知取捨（請先讀）
-- 目前設定為**不需登入**（使用者決定）：任何知道網址的人都能上傳與下載文件。緩解：網址用隨機名稱、`robots.txt`／`X-Robots-Tag` 禁止索引、暫存檔 30 分鐘自動刪除、同時處理數與檔案大小有上限。**不是真正的存取控制。**
+- 目前設定為**不需登入**（使用者決定）：任何知道網址的人都能上傳與下載文件。緩解：網址用隨機名稱、`robots.txt`／`X-Robots-Tag` 禁止索引、暫存檔閒置 4 小時自動刪除（每次操作會續期）、同時處理數與檔案大小有上限。**不是真正的存取控制。**
 - 之後想加密碼：只要在 App Service 設定 `WMR_PASSWORD`（不需改程式、不需重新部署）。
 - 文件會經過 Azure 主機（暫存在 `/tmp`，到期刪除）。若學校或研究規範不允許文件上雲，請不要部署。
 
@@ -46,7 +46,7 @@ az appservice plan create -g $RG -n wmr-plan --is-linux --sku B1
 az webapp create -g $RG -p wmr-plan -n $APP --runtime "PYTHON:3.11"
 az webapp config appsettings set -g $RG -n $APP --settings \
   SCM_DO_BUILD_DURING_DEPLOYMENT=true WEBSITES_PORT=8000 \
-  WMR_ALLOWED_HOSTS=$APP.azurewebsites.net WMR_MAX_MB=20 WMR_TTL_MIN=30 WMR_MAX_CONCURRENT=2 WMR_DATA_DIR=/tmp/wmr
+  WMR_ALLOWED_HOSTS=$APP.azurewebsites.net WMR_MAX_MB=20 WMR_TTL_MIN=240 WMR_MAX_CONCURRENT=2 WMR_DATA_DIR=/tmp/wmr
 az webapp config set -g $RG -n $APP --startup-file "python -m wmr web --host 0.0.0.0 --port 8000"
 az webapp config set -g $RG -n $APP --https-only true 2>/dev/null || az webapp update -g $RG -n $APP --https-only true
 git archive --format=zip HEAD -o /tmp/wmr.zip

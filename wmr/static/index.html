@@ -105,7 +105,19 @@ svg{overflow:visible}svg *{stroke-linejoin:round;stroke-linecap:round}
 @keyframes rollin{from{transform:translateX(-640px)}to{transform:none}}
 .puff{animation:puff 2.2s ease-out infinite}
 @keyframes puff{0%{opacity:0;transform:translateY(24px) scale(.6)}20%,80%{opacity:1}100%{opacity:.2;transform:translateY(-30px) scale(1.1)}}
-/* ---- S3 醫囑 ---- */
+/* ---- S3 手術同意書 ---- */
+.consent{margin:6px 0 0;padding:6px 12px;background:#fff7e0;border:3px solid var(--ol);border-radius:10px;font-size:15px;line-height:1.4}
+#sc3 .opt{padding:6px 0;font-size:20px}#sc3 .opt small{font-size:15px}#sc3 .fld{margin-top:6px}#sc3 .row{margin-top:8px}#sc3 .sheet{padding:14px 26px}
+.consent b{font-size:17px}
+.agree{display:flex;gap:12px;align-items:flex-start;margin-top:8px;font-weight:900;font-size:20px;cursor:pointer}
+.agree input{width:28px;height:28px;margin:2px 0 0;accent-color:#d62828;flex:none}
+.sigline{margin-top:2px;font-size:17px;color:#5c6378}.sigline span{font-family:'Snell Roundhand',cursive;font-size:26px;color:#1d4e89;border-bottom:2px solid var(--ol);padding:0 18px}
+.dsign{position:absolute;background:#1f7a5a;color:#fff;border:4px solid var(--ol);border-radius:12px;padding:8px 16px;font:inherit;font-weight:900;font-size:19px;cursor:pointer;box-shadow:5px 5px 0 rgba(43,45,66,.2);line-height:1.35;text-align:left}
+.dsign small{display:block;font-weight:600;font-size:14px;color:#cfeee2}
+.dsign:hover{background:#26946f}.dsign:focus-visible{outline:4px solid #3a86ff;outline-offset:2px}
+.pref6{margin-top:8px;padding:8px 12px;border:3px dashed #9aa1b5;border-radius:10px;font-size:16px}
+.pref6 label.ck{display:inline-flex;gap:6px;align-items:center;margin-right:14px;font-weight:700}
+.pref6 .fld{font-size:15px;margin-top:6px}.pref6 .fld input{font-size:16px;padding:5px 8px}
 .board{position:absolute;background:#b07c4f;border:5px solid var(--ol);border-radius:22px;padding:56px 22px 22px;box-shadow:10px 10px 0 rgba(43,45,66,.18)}
 .board .clip{position:absolute;left:50%;top:-22px;width:170px;height:58px;margin-left:-85px;background:linear-gradient(#d9dde8,#9aa1b5);border:5px solid var(--ol);border-radius:14px}
 .board .sheet{background:#fffdf6;border:3px solid var(--ol);border-radius:8px;padding:18px 26px;height:100%}
@@ -149,6 +161,16 @@ svg{overflow:visible}svg *{stroke-linejoin:round;stroke-linecap:round}
 @keyframes legfly{0%,20%{transform:translate(0,0) rotate(0);opacity:0}25%{opacity:1}100%{transform:translate(330px,-380px) rotate(620deg);opacity:0}}
 .whoosh{animation:whoosh 1.8s ease-out infinite}
 @keyframes whoosh{0%,25%{opacity:0;transform:translate(0,0)}40%{opacity:1}100%{opacity:0;transform:translate(40px,-120px)}}
+.frenzy{animation:frenzy .11s linear infinite alternate;transform-box:fill-box;transform-origin:50% 100%}
+@keyframes frenzy{from{transform:rotate(-3.5deg) translateX(-6px)}to{transform:rotate(3.5deg) translateX(6px)}}
+.bleed{animation:bleed .9s ease-out infinite}
+@keyframes bleed{0%{opacity:0;transform:translate(0,0) scale(.4)}12%{opacity:1}55%{opacity:1;transform:translate(var(--bx),var(--by)) scale(1)}100%{opacity:0;transform:translate(calc(var(--bx)*1.35),calc(var(--by) + 190px)) scale(.8)}}
+.redflash{animation:redflash .5s steps(2) infinite;pointer-events:none}
+@keyframes redflash{0%{opacity:.0}100%{opacity:.16}}
+.puddle{animation:puddle 2.4s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes puddle{0%{transform:scale(.3);opacity:.6}100%{transform:scale(1.5);opacity:1}}
+.yell{animation:yell .18s linear infinite alternate;transform-box:fill-box;transform-origin:center}
+@keyframes yell{from{transform:rotate(-7deg) scale(1)}to{transform:rotate(7deg) scale(1.12)}}
 .jab{animation:jab 2.4s ease-in-out infinite}
 @keyframes jab{0%{transform:translateX(300px)}30%,40%{transform:translateX(0)}48%,62%{transform:translate(-22px,10px)}72%{transform:translateX(0)}100%{transform:translateX(300px)}}
 .ouch{animation:ouch 2.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
@@ -214,6 +236,9 @@ table{border-collapse:collapse;width:100%;font-size:15px}td,th{border-bottom:1px
 th{background:#f3eedf}
 .sev-high{color:var(--hi);font-weight:800}.sev-medium{color:var(--md);font-weight:800}.sev-low{color:#5c6378}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:1ms!important;animation-iteration-count:1!important;animation-delay:0s!important;transition-duration:1ms!important}}
+#rxAi{margin-top:8px;font-size:9px;line-height:1.35;color:#5c6378}
+#rxAi .lnk{font-size:9px;margin-left:4px}
+#rxTxt{margin-top:3px;font-size:8px;color:#6b7186;max-height:46px;overflow:auto}
 </style></head><body>
 <div id="stage">
  <div id="far" class="layer"></div>
@@ -232,6 +257,7 @@ th{background:#f3eedf}
     <dl><dt>科　別</dt><dd>AI 痕跡科（門診）</dd><dt>病　人</dt><dd id="slipName">（尚未收件）</dd><dt>狀　態</dt><dd id="slipStat">待收件</dd><dt>醫　師</dt><dd>值班醫師（看心情）</dd></dl>
     <div class="stamp" id="stamp1" style="right:16px;bottom:18px">已收件</div>
    </div>
+   <button class="dsign" id="directPay" style="left:600px;top:250px;width:255px">▶ 收費處／藥局<small>已經有改好的待修版？點這裡直接繳費領藥</small></button>
    <div id="lamp"><b id="lampNo">414155039</b><span id="lampTx">請掛號</span></div>
    <button class="hit" id="hit1" style="left:1054px;top:226px;width:142px;height:110px" aria-label="點擊選擇 .docx 檔案（櫃檯窗口）" title="點擊選擇 .docx 檔案"></button>
    <div class="stamp" id="stamp1w" style="left:1062px;top:190px">已收件</div>
@@ -255,23 +281,24 @@ th{background:#f3eedf}
    </div>
   </section>
 
-  <!-- S3 醫囑 -->
+  <!-- S3 手術同意書 -->
   <section class="scene" id="sc3" style="left:3200px">
    <div class="board" style="left:440px;top:110px;width:740px;height:672px"><div class="clip"></div>
     <div class="sheet">
-     <h2><span class="tag">3/7</span>醫囑單（清理設定）</h2>
-     <p class="mut" style="margin:0 0 4px">醫師口述、護理師照辦。勾完按下面的按鈕。</p>
+     <h2><span class="tag">3/7</span>手術同意書（清理設定）</h2>
+     <div class="consent"><b>手術前說明（簽名同意後才進手術室）</b>：本手術會重建檔案、移除隱藏痕跡並改寫作者／公司屬性。<b>原檔不會被更動</b>；啟用風格層可能改變部分用字，須自行核對。</div>
      <label class="opt"><input type="checkbox" id="oStyle"><span>啟用文字風格層<small>規則式替換常見 AI 慣用語；不處理參考文獻</small></span></label>
      <label class="opt"><input type="checkbox" id="oKeep"><span>保留隱藏文字<small>預設會刪除隱藏文字</small></span></label>
      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><label class="fld">作者／最後修改者<input type="text" id="oAuthor" maxlength="100" autocomplete="off"></label>
      <label class="fld">公司<input type="text" id="oCompany" maxlength="100" autocomplete="off"></label></div>
-     <label class="fld">Claude API 金鑰（選填）<input type="password" id="oKey" maxlength="400" autocomplete="off" spellcheck="false" placeholder="不填＝維持一般註解"></label>
-     <p class="mut" style="margin:6px 0 0;font-size:15px">作者、公司留空用預設值。填金鑰後，可疑段落會送到 Anthropic 產生改寫建議，費用由金鑰帳戶支付，金鑰不存檔。</p>
-     <div class="row"><button class="btn go" id="order">下達醫囑 ▶</button></div>
+     <p class="mut" style="margin:4px 0 0;font-size:14px">作者、公司留空用預設值。設定會記在這個瀏覽器，下次自動帶入。</p>
+     <label class="agree"><input type="checkbox" id="oAgree"><span>我已了解上述說明，同意接受手術</span></label>
+     <div class="sigline">立同意書人：<span id="sigName">　　　　</span></div>
+     <div class="row"><button class="btn go" id="order" disabled>簽名同意，進手術室 ▶</button></div>
     </div>
    </div>
-   <div class="bubble" style="left:96px;top:330px;--tx:120px">照這張醫囑辦！</div>
-   <div class="bubble" style="left:1270px;top:378px;--tx:110px">收到，馬上辦！</div>
+   <div class="bubble" style="left:96px;top:330px;--tx:120px">請先簽同意書！</div>
+   <div class="bubble" style="left:1270px;top:378px;--tx:110px">簽好就推進手術室！</div>
   </section>
 
   <!-- S4 治療 -->
@@ -301,6 +328,8 @@ th{background:#f3eedf}
      <div id="pCnt">—</div>
      <div style="margin-top:6px;color:#5c6378">醫師簽章：<span style="font-family:'Snell Roundhand',cursive;font-size:22px;color:#1d4e89">Dr. ~~~</span></div>
      <div class="cw">工作副本 · 不可直接繳交</div>
+     <div id="rxAi"><b>給 Claude 的用法</b>（選用）：把待修版交給 Claude desktop，貼上下方提示詞。<button class="lnk" id="rxCopy" type="button">複製提示詞</button>
+      <div id="rxTxt">這份 Word 有作者為「檢測提示」的註解，標出可疑段落與原因。請逐則讀註解，找到對應段落，給出改寫建議。規則：保留原意、事實、數字、專有名詞與引用（作者與年份），不新增原文沒有的來源或數據；只處理註解列出的問題；讓句子長短交錯，少用句首連接詞、「不僅…更…」「不是…而是…」與三項並列；模糊引用不可編造出處，改成不需出處的說法或保持不變；每段長度與原文相差不超過 20%。請輸出清單：「原文開頭 → 建議改寫」，不要修改或回傳 Word 檔。</div></div>
     </div>
    </div>
    <div class="card" style="left:1010px;top:96px;width:562px;height:680px">
@@ -330,13 +359,16 @@ th{background:#f3eedf}
      <div class="row" style="margin-top:6px"><button class="btn" id="pick6">選擇 .docx 檔案</button><button class="lnk" id="toSkip">不需人工修改，直接繳費</button></div></div>
     <div id="s6Skip" hidden><p><b>本次不提交待修版</b>：將直接以清理版產生最終乾淨版。</p><button class="lnk" id="toSub">改為提交修改後的檔案</button></div>
     <p id="s6Got" style="font-weight:800;word-break:break-all" hidden></p>
+    <div class="pref6" id="s6Pref" hidden><div class="mut" style="font-size:15px">沿用掛號時的設定（已自動帶入；須與當初一致）</div>
+     <label class="ck"><input type="checkbox" id="pStyle">啟用風格層</label><label class="ck"><input type="checkbox" id="pKeep">保留隱藏文字</label>
+     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="fld">作者<input type="text" id="pAuthor" maxlength="100" autocomplete="off"></label><label class="fld">公司<input type="text" id="pCompany" maxlength="100" autocomplete="off"></label></div></div>
     <p class="mut" style="margin-top:10px">接著按刷卡機上的綠色<b>「確認」</b>鍵完成繳費。</p>
    </div>
    <div class="pos sleep" id="pos" style="left:572px;top:298px">
     <div class="slot"></div>
     <div class="card2">HOSPI CARD<i></i>**** 0042</div>
     <div class="body">
-     <div class="brand"><span>HOSPI-PAY 3000</span><i></i></div>
+     <div class="brand"><span>FJU TUITION 60K+</span><i></i></div>
      <div class="scr"><b id="posL1">請先提交待修版</b><span id="posL2">確認鍵暫停服務</span></div>
      <div class="keys" id="keys">
       <button tabindex="-1" aria-hidden="true">1</button><button tabindex="-1" aria-hidden="true">2</button><button tabindex="-1" aria-hidden="true">3</button><button class="fn red" tabindex="-1" aria-hidden="true">取消</button>
@@ -368,7 +400,7 @@ th{background:#f3eedf}
  </div>
  <div id="near" class="layer"></div>
 
- <header id="hud"><div class="brand">輔大醫院<small>Watermark Remover</small></div><ol id="steps"></ol></header>
+ <header id="hud"><div class="brand">輔大醫院</div><ol id="steps"></ol></header>
  <div id="cast" role="alert" hidden><b>院內廣播</b><span id="castT"></span><button id="castX">知道了</button></div>
  <footer id="fine">每個發現都只是線索（可疑度），不是判決；同一訊號在不同文體意義不同，請搭配人工判斷。</footer>
 </div>
@@ -389,7 +421,7 @@ const enc=encodeURIComponent;
 
 /* 共用狀態（重置時整個換新） */
 const S={};let TOKEN=0;
-function fresh(){Object.assign(S,{step:1,jid:null,info:null,risk:'low',style:false,keep:false,author:'',company:'',key:'',clean:null,review:null,fin:null,skip:false,file6:null,busy:false,paid:false})}
+function fresh(){Object.assign(S,{direct:false,step:1,jid:null,info:null,risk:'low',style:false,keep:false,author:'',company:'',clean:null,review:null,fin:null,skip:false,file6:null,busy:false,paid:false})}
 fresh();
 
 /* 呼叫後端；錯誤一律丟出 Error（訊息給廣播條用） */
@@ -568,6 +600,13 @@ function bg3(){return svg(room('#f6efdc','#e3d3a8',[[1250,110,290,220]])+`
  ${sign(70,64,250,100,'診療室|樹德樓 LW210',28,'#2a5d8f','#fff')}${sign(70,180,250,70,'洗手五時機|每次存檔前也算',16,'#fff')}
  <g transform="translate(250 782)">${doctor('point','smile')}</g>
  <g transform="translate(1390 782) scale(-1 1)">${RN('note','smile',true)}</g>`)}
+const BL='#c1121f';
+/* 噴血：從 (x,y) 朝 a0~a1 度（-90＝正上方）噴出 n 滴，卡通風格 */
+function spray(x,y,n,a0,a1,d){let o='';for(let i=0;i<n;i++){const a=(a0+(a1-a0)*i/Math.max(1,n-1))*Math.PI/180,r=d+((i*37)%5)*20;
+ o+=`<circle class="bleed" r="${6+(i%3)*3}" fill="${BL}" style="--bx:${Math.round(Math.cos(a)*r)}px;--by:${Math.round(Math.sin(a)*r)}px;animation-delay:${((i*0.083)%0.9).toFixed(2)}s"/>`}
+ return `<g transform="translate(${x} ${y})">${o}</g>`}
+const FLASH='<rect class="redflash" x="0" y="0" width="1600" height="900" fill="#d62828"/>';
+const SPLAT=(x,y,r)=>`<g transform="translate(${x} ${y})"><circle r="${r}" fill="${BL}"/><circle cx="${r*0.9}" cy="${-r*0.4}" r="${r*0.45}" fill="${BL}"/><circle cx="${-r*0.8}" cy="${r*0.6}" r="${r*0.35}" fill="${BL}"/></g>`;
 function bg4(){
  const bed=`<rect x="330" y="600" width="600" height="30" rx="12" fill="#fff" ${sw()}/><rect x="330" y="630" width="600" height="20" fill="#8d99ae" ${sw()}/><path d="M360 650v110M900 650v110" ${sw(10)}/><circle cx="360" cy="764" r="12" fill="#555" ${sw(3)}/><circle cx="900" cy="764" r="12" fill="#555" ${sw(3)}/><rect x="318" y="540" width="16" height="110" rx="6" fill="#8d99ae" ${sw()}/>`;
  return svg(room('#dff1f1','#b7e0dd')+`
@@ -578,31 +617,39 @@ function bg4(){
   <g data-show="high-done medium-work medium-done low-work low-done high-idle medium-idle low-idle" hidden><path d="M12 52H26l4 -6 4 6H42l4 12 6 -40 6 40 4 -12H74l4 -6 4 6H90l4 12 6 -40 6 40 4 -12H128" fill="none" stroke="#52ff8a" stroke-width="3"/></g>
   <rect class="wipe" x="10" y="10" width="18" height="74" fill="#0b2e1f"/><circle cx="20" cy="94" r="5" fill="#ff3b3b"/><path d="M70 104v180" ${sw(8)}/><path d="M30 284h80" ${sw(8)}/></g>
  <!-- high：心肺復甦 -->
- <g data-show="high-work" hidden>
+ <g data-show="high-work" hidden>${FLASH}
   <g transform="translate(110 782)"><rect x="-60" y="-150" width="130" height="90" rx="8" fill="#ffd23f" ${sw()}/><text x="5" y="-110" text-anchor="middle" font-size="18" font-weight="900" fill="${OL}">電擊器</text><rect x="-30" y="-96" width="70" height="20" rx="4" fill="#222"/><rect x="-60" y="-60" width="130" height="60" fill="#8d99ae" ${sw()}/></g>
   <path d="M150 680Q240 720 300 630Q330 590 446 600" fill="none" stroke="#333" stroke-width="4"/>
-  <g transform="translate(580 742)">${doctor('cpr','grit')}</g><rect x="530" y="742" width="100" height="40" rx="6" fill="#e9c46a" ${sw()}/>${bed}
-  <g transform="translate(640 600)"><g class="chest">${lying({mood:'ko'})}</g></g><g transform="translate(580 742)"><g class="cpr">${hand(-4,-200)}${hand(10,-198)}</g></g>
-  <g transform="translate(340 782)">${RN('paddles','worry')}</g>
+  <g transform="translate(580 742)"><g class="frenzy">${doctor('cpr','grit')}</g></g><rect x="530" y="742" width="100" height="40" rx="6" fill="#e9c46a" ${sw()}/>${bed}
+  <g transform="translate(640 600)"><g class="chest">${lying({mood:'ko'})}</g></g>
+  <g class="puddle"><ellipse cx="470" cy="574" rx="64" ry="14" fill="${BL}"/></g>
+  ${spray(512,560,16,-125,-10,130)}${spray(512,560,8,-80,-30,200)}
+  <g transform="translate(700 236)"><g class="yell"><text text-anchor="middle" font-size="46" font-weight="900" fill="${BL}" stroke="#fff" stroke-width="4" paint-order="stroke">嘔——噴血！！</text></g></g>
+  ${SPLAT(545,650,22)}${SPLAT(612,690,16)}${SPLAT(560,720,12)}<g transform="translate(580 742)"><g class="cpr">${hand(-4,-200)}${hand(10,-198)}</g></g>
+  <g transform="translate(340 782)"><g class="frenzy">${RN('paddles','worry')}</g></g>
   <g class="zap"><path d="M480 470l30 30-18 6 34 40-12-36 20-4-30-40Z" fill="#ffe14d" ${sw(3)}/></g>
   <g class="pulse"><text x="430" y="330" text-anchor="middle" font-size="64" font-weight="900" fill="#d62828" stroke="#fff" stroke-width="3" paint-order="stroke">CPR!</text></g>
   <text class="beep" x="1030" y="236" text-anchor="middle" font-size="30" font-weight="900" fill="#d62828">嗶—嗶—</text></g>
  <g data-show="high-done" hidden><g transform="translate(850 782)">${doctor('relax','relief')}</g>
   <g transform="translate(560 782)">${chairPatient({cont:true,mood:'o',arm:'up'})}</g><g transform="translate(300 782)">${RN('push','joy')}</g></g>
  <!-- medium：截肢（卡通） -->
- <g data-show="medium-work" hidden><g transform="translate(740 742)">${doctor('scissors','grit')}</g><rect x="690" y="742" width="100" height="40" rx="6" fill="#e9c46a" ${sw()}/>${bed}
+ <g data-show="medium-work" hidden>${FLASH}<g transform="translate(740 742)"><g class="frenzy">${doctor('scissors','grit')}</g></g><rect x="690" y="742" width="100" height="40" rx="6" fill="#e9c46a" ${sw()}/>${bed}
   <g transform="translate(640 600)">${lying({mood:'worry',noLeg:true})}</g>
+  ${spray(704,578,22,-170,-20,150)}${spray(704,578,10,-100,-50,230)}
+  <circle cx="704" cy="578" r="16" fill="${BL}"/>${SPLAT(760,560,26)}${SPLAT(700,620,18)}${SPLAT(790,640,14)}
+  <g transform="translate(470 270)"><g class="yell"><text text-anchor="middle" font-size="46" font-weight="900" fill="${BL}" stroke="#fff" stroke-width="4" paint-order="stroke">啊啊啊——我的腿！！</text></g></g>
   <g transform="translate(760 560)"><g class="cloud"><g fill="#f1f3f8" ${sw()}><circle cx="-70" cy="10" r="46"/><circle cx="-10" cy="-30" r="56"/><circle cx="60" cy="0" r="50"/><circle cx="10" cy="34" r="44"/><circle cx="80" cy="44" r="30"/></g>
    <path d="M-40 -10l10 10M20 20l14 -6M50 -30l8 12" ${sw(4)}/><path d="M-20 30l6-12 6 12 12 2-10 8 3 12-11-6-11 6 3-12-10-8Z" fill="#ffd23f" ${sw(2)}/></g></g>
   <g transform="translate(760 570)"><g class="legfly"><g transform="rotate(-10)"><rect x="-50" y="-9" width="100" height="17" rx="8" fill="${SK}" ${sw()}/><rect x="-56" y="-12" width="18" height="23" rx="6" fill="#fff" ${sw(3)}/><ellipse cx="54" cy="-12" rx="9" ry="17" fill="#6b4f3a" ${sw()}/></g></g></g>
   <g class="whoosh"><text x="820" y="440" font-size="46" font-weight="900" fill="#3a86ff" stroke="#fff" stroke-width="3" paint-order="stroke">咻！</text><path d="M800 470h-70M810 490h-90M800 510h-60" stroke="#3a86ff" stroke-width="5"/></g>
-  <g transform="translate(220 782)">${RN('note','worry')}</g></g>
+  <g transform="translate(220 782)"><g class="frenzy">${RN('note','worry')}</g></g></g>
  <g data-show="medium-done" hidden><g transform="translate(850 782)">${doctor('relax','smile')}</g>
   <g transform="translate(560 782)">${chairPatient({cont:true,mood:'joy',arm:'up'})}</g><g transform="translate(300 782)">${RN('push','smile')}</g></g>
  <!-- low：屁股打一針 -->
- <g data-show="low-work" hidden><g transform="translate(200 782)">${doctor('cross','smile')}</g>${bed}
+ <g data-show="low-work" hidden>${FLASH}<g transform="translate(200 782)"><g class="frenzy">${doctor('cross','grit')}</g></g>${bed}
   <g transform="translate(640 600)"><g class="hop">${lying({prone:true,faces:`<g class="calm">${head(-150,-50,40,{hair:HAIR.pt(40),mood:'worry'})}</g><g class="grit">${head(-150,-50,40,{hair:HAIR.pt(40),mood:'grit'})}</g>`})}</g></g>
-  <g class="jab"><g transform="translate(890 782) scale(-1 1)">${RN('syringe','smile',true)}</g></g>
+  <g class="jab"><g transform="translate(890 782) scale(-1 1)"><g class="frenzy">${RN('syringe','grit',true)}</g></g></g>
+  ${spray(668,536,12,-150,-30,110)}${SPLAT(690,520,14)}${spray(486,560,6,-100,-40,70)}
   <g transform="translate(560 420)"><g class="ouch"><path d="M-70 -40L-40 -60L-20 -90L10 -62L50 -80L44 -40L80 -20L40 0L50 40L10 20L-20 50L-30 10L-80 10L-50 -14Z" fill="#ffd23f" ${sw()}/><text x="0" y="-4" text-anchor="middle" font-size="40" font-weight="900" fill="#d62828">噢！</text></g></g></g>
  <g data-show="low-done" hidden><g transform="translate(200 782)">${doctor('stand','joy')}</g>
   <g transform="translate(640 782)">${chairPatient({cont:true,mood:'relief',arm:'up'})}</g><g transform="translate(890 782) scale(-1 1)">${RN('stand','smile',true)}</g></g>
@@ -657,7 +704,7 @@ function nearSVG(){
  return `<svg width="14000" height="900" viewBox="0 0 14000 900" aria-hidden="true">`+items.map((it,k)=>`<g transform="translate(${2000*k+1800} 0)">${it}</g>`).join('')+'</svg>'}
 
 /* ============ HUD 進度條（不可點擊跳步） ============ */
-const STEPS=[['掛號','<path d="M4 7h16v10H4z M9 7v10" fill="none" stroke="currentColor" stroke-width="2.4"/>'],['檢測','<circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/>'],['醫囑','<rect x="5" y="4" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M9 3h6v4H9z M8 12h8M8 16h6" fill="none" stroke="currentColor" stroke-width="2"/>'],['治療','<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z" fill="currentColor"/>'],['處方','<rect x="5" y="9" width="14" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M8 9V3h8v6M8 14h8v7H8z" fill="none" stroke="currentColor" stroke-width="2"/>'],['繳費','<rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M3 10h18" stroke="currentColor" stroke-width="3"/>'],['領藥','<rect x="4" y="9" width="16" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="2.4" transform="rotate(-35 12 12.5)"/><path d="M9.5 9.5l5 6" stroke="currentColor" stroke-width="2"/>']];
+const STEPS=[['掛號','<path d="M4 7h16v10H4z M9 7v10" fill="none" stroke="currentColor" stroke-width="2.4"/>'],['檢測','<circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/>'],['同意書','<rect x="5" y="4" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M9 3h6v4H9z M8 12h8M8 16h6" fill="none" stroke="currentColor" stroke-width="2"/>'],['治療','<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z" fill="currentColor"/>'],['處方','<rect x="5" y="9" width="14" height="8" rx="2" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M8 9V3h8v6M8 14h8v7H8z" fill="none" stroke="currentColor" stroke-width="2"/>'],['繳費','<rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M3 10h18" stroke="currentColor" stroke-width="3"/>'],['領藥','<rect x="4" y="9" width="16" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="2.4" transform="rotate(-35 12 12.5)"/><path d="M9.5 9.5l5 6" stroke="currentColor" stroke-width="2"/>']];
 function hud(n){$('steps').innerHTML=STEPS.map(([t,ic],i)=>`<li class="${i+1===n?'on':i+1<n?'done':''}" ${i+1===n?'aria-current="step"':''}><svg viewBox="0 0 24 24">${ic}</svg>${t}<span class="ck">✓</span></li>`).join('')}
 
 /* ============ 鏡頭（橫向捲軸） ============ */
@@ -735,7 +782,7 @@ async function upload(f){
  }catch(e){if(t!==TOKEN)return;S.busy=false;$('lamp').classList.remove('busy');$('lampTx').textContent='退件';$('slipStat').textContent='退件，請重新遞交';$('stamp1w').classList.remove('show');$('clerkSay').textContent='這份我收不了…';cast('上傳失敗：'+e.message)}}
 function setInfo(r){S.info=r;S.jid=r.id;S.risk=(r.risk&&r.risk.level)||'low';
  $('stage').classList.remove('rk-high','rk-medium','rk-low');$('stage').classList.add('rk-'+S.risk);
- $('oStyle').checked=false;$('oKeep').checked=false;$('oAuthor').value=r.defaults?.author||'';$('oCompany').value=r.defaults?.company||'';$('oKey').value=''}
+ applyPrefs(r.defaults)}
 
 /* ============ S2 檢測 ============ */
 function showSet(scene,key){$(scene).querySelectorAll('[data-show]').forEach(g=>g.toggleAttribute('hidden',!g.dataset.show.split(' ').includes(key)))}
@@ -762,10 +809,15 @@ $('ctMore').onclick=()=>{const r=S.info;dlg('檢測詳情',`<p class="mut">以�
  <p><a class="btn alt" target="_blank" rel="noopener" href="/report/${enc(S.jid)}">開啟完整報告</a></p>`)};
 $('ctNext').onclick=()=>{if(S.step===2)go(3)};
 
-/* ============ S3 醫囑 ============ */
-function enter3(){$('order').disabled=false}
-$('order').onclick=()=>{if(S.step!==3)return;const key=$('oKey').value.trim();if(!/^[\x21-\x7e]*$/.test(key)){cast('Claude API 金鑰格式不正確');return}S.key=key;S.style=$('oStyle').checked;S.keep=$('oKeep').checked;S.author=$('oAuthor').value.trim();S.company=$('oCompany').value.trim();$('order').disabled=true;go(4)};
-const qs=()=>`id=${enc(S.jid)}&style=${S.style?1:0}&keep_hidden=${S.keep?1:0}&author=${enc(S.author)}&company=${enc(S.company)}`;
+/* ============ S3 手術同意書 ============ */
+const PREF_KEY='wmr.prefs.v1';
+function loadPrefs(){try{return JSON.parse(localStorage.getItem(PREF_KEY)||'{}')||{}}catch(e){return{}}}
+function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify({style:S.style,keep:S.keep,author:S.author,company:S.company}))}catch(e){}}
+function applyPrefs(def){const P=loadPrefs();$('oStyle').checked=!!P.style;$('oKeep').checked=!!P.keep;$('oAuthor').value=P.author||def?.author||'';$('oCompany').value=P.company||def?.company||'';$('oAgree').checked=false;$('order').disabled=true}
+function enter3(){$('sigName').textContent=(S.info&&S.info.name?S.info.name.replace(/\.docx$/i,''):'')||'　　　　';$('order').disabled=!$('oAgree').checked}
+$('oAgree').onchange=()=>{if(S.step===3)$('order').disabled=!$('oAgree').checked};
+$('order').onclick=()=>{if(S.step!==3||!$('oAgree').checked)return;S.style=$('oStyle').checked;S.keep=$('oKeep').checked;S.author=$('oAuthor').value.trim();S.company=$('oCompany').value.trim();savePrefs();$('order').disabled=true;go(4)};
+const qs=()=>`id=${enc(S.jid||'')}&style=${S.style?1:0}&keep_hidden=${S.keep?1:0}&author=${enc(S.author)}&company=${enc(S.company)}`;
 
 /* ============ S4 治療 ============ */
 function reset4(){const sc=$('sc4');sc.dataset.st='idle';sc.classList.remove('paused');showSet('sc4',S.risk+'-idle');$('opLamp').className='oplamp';$('opLamp').textContent='治療中';$('chartSt').textContent='準備治療…';$('chartSt').className='mut';
@@ -793,19 +845,20 @@ $('cNext').onclick=()=>{if(S.step===4)go(5)};
 /* ============ S5 處方（待修版） ============ */
 function reset5(){$('paper').className='';$('printer').classList.remove('shake');$('plcd').textContent='待機';$('pled').setAttribute('fill','#999');$('rvSt').innerHTML='處方列印中<span class="dots"></span>';$('rvSt').className='mut';$('rvBtns').hidden=true;$('rvNone').hidden=true;$('rvRetry').hidden=true;$('say5').hidden=true}
 async function doReview(){
- const t=TOKEN;reset5();cast(S.key?'Claude 正在寫改寫建議，段落多時最久約 3 分鐘…':'');$('printer').classList.add('shake');$('plcd').textContent='列印中';$('pled').setAttribute('fill','#ffbe3d');
+ const t=TOKEN;reset5();$('printer').classList.add('shake');$('plcd').textContent='列印中';$('pled').setAttribute('fill','#ffbe3d');
  try{
-  const [r]=await Promise.all([api('/api/review?id='+enc(S.jid)+'&min_conf='+enc('中'),null,S.key?{'X-Claude-Api-Key':S.key}:null),sleep(1200)]);if(t!==TOKEN)return;S.review=r;
+  const [r]=await Promise.all([api('/api/review?id='+enc(S.jid)+'&min_conf='+enc('中')),sleep(1200)]);if(t!==TOKEN)return;S.review=r;
   $('pName').textContent=S.info.name.replace(/\.docx$/i,'')+'_待修版.docx';
   $('pCnt').textContent=r.comments?`共 ${r.comments} 則註解／${r.paragraphs} 段`:'沒有需要人工處理的段落';
   $('paper').classList.add('out');await sleep(2600);if(t!==TOKEN)return;
   $('printer').classList.remove('shake');$('plcd').textContent='完成';$('pled').setAttribute('fill','#2ecc71');$('say5').hidden=false;
-  cast('');$('rvSt').textContent=(r.comments?`待修版已產生：共 ${r.comments} 則註解，分布在 ${r.paragraphs} 段。`:'待修版已產生。')+(r.ai?`Claude 建議 ${r.ai.done}/${r.ai.requested} 段。${r.ai.error||''}`:'');$('rvSt').className='';
+  cast('');$('rvSt').textContent=(r.comments?`待修版已產生：共 ${r.comments} 則註解，分布在 ${r.paragraphs} 段。`:'待修版已產生。');$('rvSt').className='';
   $('rvNone').hidden=!!r.comments;$('rvDl').href='/download/'+enc(S.jid)+'/review';$('rvBtns').hidden=false;
   if(!r.comments&&!DEMO){await sleep(1800);if(t!==TOKEN||S.step!==5)return;S.skip=true;go(6)}   // 沒有需人工處理的段落：自動前往繳費（跳過模式）
  }catch(e){if(t!==TOKEN)return;$('printer').classList.remove('shake');$('plcd').textContent='卡紙';$('pled').setAttribute('fill','#ff3b3b');
   $('rvSt').textContent='產生待修版失敗：'+e.message;$('rvSt').className='hi';cast('產生待修版失敗：'+e.message);$('rvRetry').hidden=false}}
 $('rvRetryB').onclick=()=>{if(S.step===5)doReview()};
+$('rxCopy').onclick=async()=>{const t=$('rxTxt').textContent;try{await navigator.clipboard.writeText(t);cast('已複製提示詞')}catch(e){const r=document.createRange();r.selectNodeContents($('rxTxt'));const g=getSelection();g.removeAllRanges();g.addRange(r);cast('請按 Ctrl/Cmd+C 複製選取的提示詞')}};
 $('rvNext').onclick=()=>{if(S.step===5){S.skip=false;go(6)}};
 $('rvSkip').onclick=()=>{if(S.step===5){S.skip=true;go(6)}};
 
@@ -816,8 +869,11 @@ function render6(){$('s6Need').hidden=S.skip;$('s6Skip').hidden=!S.skip;$('hit6'
  if(S.skip)posState('ready','應付 NT$ 0','（全民健保）請按「確認」');
  else if(S.file6)posState('ready','應付 NT$ 0','（全民健保）請按「確認」');
  else posState('sleep','請先提交待修版','確認鍵暫停服務')}
-function enter6(){reset6()}
-function submit6(f){S.file6=f;const g=$('s6Got');g.textContent='已收件：'+f.name;g.hidden=false;$('stamp6').classList.add('show');render6();const p=$('pos');p.classList.remove('pop');void p.offsetWidth;p.classList.add('pop')}
+function enter6(){reset6();$('s6Pref').hidden=!S.direct;$('toSkip').hidden=!!S.direct;
+ if(S.direct){const P=loadPrefs();$('pStyle').checked=!!P.style;$('pKeep').checked=!!P.keep;$('pAuthor').value=P.author||'';$('pCompany').value=P.company||''}}
+$('directPay').onclick=()=>{if(S.step!==1||S.busy)return;TOKEN++;fresh();S.direct=true;S.info={name:'',defaults:{}};S.risk='low';
+ $('stage').classList.remove('rk-high','rk-medium','rk-low');$('stage').classList.add('rk-low');S.skip=false;go(6)};
+function submit6(f){S.file6=f;if(S.direct)S.info.name=f.name.replace(/_待修版(?=\.docx$)/i,'');const g=$('s6Got');g.textContent='已收件：'+f.name;g.hidden=false;$('stamp6').classList.add('show');render6();const p=$('pos');p.classList.remove('pop');void p.offsetWidth;p.classList.add('pop')}
 $('toSkip').onclick=()=>{if(S.step===6&&!S.busy){S.skip=true;S.file6=null;$('s6Got').hidden=true;$('stamp6').classList.remove('show');render6()}};
 $('toSub').onclick=()=>{if(S.step===6&&!S.busy){S.skip=false;render6()}};
 $('keys').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&b.id!=='posOK'&&!S.busy&&!S.paid){$('posL2').textContent='嗶！請按綠色「確認」鍵'}});
@@ -825,8 +881,9 @@ $('posOK').onclick=async()=>{
  if(S.step!==6||S.busy||S.paid||(!S.skip&&!S.file6))return;
  const t=TOKEN;S.busy=true;cast('');posState('paying','處理中…','請勿拔卡');
  try{
-  const [r]=await Promise.all([api('/api/final?'+qs(),S.skip?new Uint8Array(0):S.file6),sleep(1800)]);if(t!==TOKEN)return;
-  S.fin=r;S.paid=true;S.busy=false;posState('ready','付款成功','謝謝光臨，請至領藥處');$('posOK').disabled=true;
+  if(S.direct){S.style=$('pStyle').checked;S.keep=$('pKeep').checked;S.author=$('pAuthor').value.trim();S.company=$('pCompany').value.trim();savePrefs()}
+  const [r]=await Promise.all([api('/api/final?'+qs()+(S.direct?'&name='+enc(S.info.name+'.docx'):''),S.skip?new Uint8Array(0):S.file6),sleep(1800)]);if(t!==TOKEN)return;
+  S.fin=r;if(r.id)S.jid=r.id;S.paid=true;S.busy=false;posState('ready','付款成功','謝謝光臨，請至領藥處');$('posOK').disabled=true;
   await sleep(1300);if(t!==TOKEN)return;go(7)
  }catch(e){if(t!==TOKEN)return;S.busy=false;posState('fail','交易失敗','請按「確認」重試');cast('產生最終版失敗：'+e.message)}};
 $('hit6').onclick=()=>pick(6);$('pick6').onclick=()=>pick(6);
@@ -851,7 +908,7 @@ async function enter7(){
 $('fMore').onclick=()=>cleanDetails(S.fin||{},'最終版詳情');
 $('again').onclick=()=>{TOKEN++;fresh();follow=null;cast('');if($('dlg').open)$('dlg').close();
  $('stage').classList.remove('rk-high','rk-medium','rk-low');
- reset1();reset2();reset4();reset5();reset6();reset7();$('oStyle').checked=false;$('oKeep').checked=false;$('oAuthor').value='';$('oCompany').value='';$('oKey').value='';$('order').disabled=false;
+ reset1();reset2();reset4();reset5();reset6();reset7();applyPrefs(null);$('s6Pref').hidden=true;
  hud(1);cam(1)};
 
 /* ============ 初始化 ============ */

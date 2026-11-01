@@ -1,3 +1,6 @@
+import os
+import re
+import time
 import json
 import threading
 import urllib.parse
@@ -169,3 +172,35 @@ def test_busy_returns_503(server, monkeypatch):
     web._BUSY.acquire()
     st, j = _post(server + "/api/upload?name=a.docx", b"PK")
     assert st == 503
+
+
+def test_final_without_prior_job(server, tmp_path):
+    """關掉網頁後，只憑修改後的待修版就能出最終版（編號空白或已過期都行）。"""
+    from docx import Document
+    d = Document()
+    d.add_paragraph("內容。")
+    p = str(tmp_path / "e.docx")
+    d.save(p)
+    body = open(p, "rb").read()
+    st, f = _post(server + "/api/final?id=&style=0&keep_hidden=0&name=" + urllib.parse.quote("論文.docx"), body)
+    assert st == 200 and re.fullmatch(r"[0-9a-f]{16}", f["id"])
+    fin = urllib.request.urlopen(server + "/download/%s/final" % f["id"])
+    assert "filename*=UTF-8''" + urllib.parse.quote("論文_clean.docx") in fin.headers["Content-Disposition"]
+    st, f2 = _post(server + "/api/final?id=%s&style=0&keep_hidden=0" % ("0" * 16), body)   # 已過期的舊編號
+    assert st == 200 and f2["id"] == "0" * 16
+    st, bad = _post(server + "/api/final?id=&style=0&keep_hidden=0")                           # 沒檔案也沒編號
+    assert st >= 400
+
+
+def test_access_renews_ttl(server, monkeypatch, tmp_path):
+    from docx import Document
+    d = Document(); d.add_paragraph("x")
+    p = str(tmp_path / "t.docx"); d.save(p)
+    st, j = _post(server + "/api/upload?name=t.docx", open(p, "rb").read())
+    jd = os.path.join(web.ROOT, j["id"])
+    old = time.time() - 3 * 3600
+    os.utime(jd, (old, old))
+    _post(server + "/api/clean?id=%s&style=0&keep_hidden=0" % j["id"])
+    monkeypatch.setattr(web, "TTL_SECONDS", 4 * 3600)
+    assert time.time() - os.path.getmtime(jd) < 60
+    assert web.purge_expired() == 0

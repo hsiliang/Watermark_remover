@@ -10,9 +10,7 @@
   WMR_SECRET         簽 cookie 的密鑰（預設由密碼衍生）
 
 流程：上傳 docx → 檢測＋可疑部位統計 → 按下清理 → 下載。
-清理使用的仍是純本地的 rebuild／finalize，不呼叫任何 AI 或 Word。
-唯一的例外是選用的改寫建議：使用者自備 Claude API 金鑰時，產生待修版會把段落送到 Anthropic，
-建議只寫進註解；金鑰由 X-Claude-Api-Key 標頭傳入（不放網址，避免進入存取紀錄），不寫入檔案。
+清理使用的仍是純本地的 rebuild／finalize，不呼叫任何 AI 或 Word，文件不會離開伺服器。
 """
 from __future__ import annotations
 
@@ -30,7 +28,7 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .common import AUTHOR, COMPANY, clean_identity
-from . import ai, comments as cm, finalize, rebuild as rb, report, scan as sc, suspect, verify as vf
+from . import comments as cm, finalize, rebuild as rb, report, scan as sc, suspect, verify as vf
 
 def _env_int(name: str, default: int) -> int:
     try:
@@ -53,7 +51,13 @@ SKIP = ("參考文獻", "參考資料", "References", "Bibliography")
 def _dir(jid: str) -> str:
     if not _ID.match(jid or ""):
         raise ValueError("bad id")
-    return os.path.join(ROOT, jid)
+    d = os.path.join(ROOT, jid)
+    if os.path.isdir(d):
+        try:
+            os.utime(d, None)        # 每次存取都續期：TTL 從「最後一次操作」起算
+        except OSError:
+            pass
+    return d
 
 
 def do_upload(data: bytes, name: str) -> dict:
@@ -116,7 +120,7 @@ def do_clean(jid: str, style: bool, keep_hidden: bool, author: str = "", company
             "risk_before": _risk(sc.scan(src), suspect.analyze(src, SKIP)), "risk_after": _risk(after, rv)}
 
 
-def do_review(jid: str, min_conf: str = "中", api_key: str = "") -> dict:
+def do_review(jid: str, min_conf: str = "中") -> dict:
     """待修版：在 clean.docx 上為需人工處理的段落加註解。"""
     if min_conf not in ("低", "中", "高"):
         raise ValueError("min_conf 不合法")
@@ -124,17 +128,25 @@ def do_review(jid: str, min_conf: str = "中", api_key: str = "") -> dict:
     clean = os.path.join(d, "clean.docx")
     if not os.path.exists(clean):
         raise FileNotFoundError("請先清理")
-    key = ai.check_key(api_key)
-    return cm.add_comments(clean, os.path.join(d, "review.docx"), min_conf=min_conf, skip_headings=SKIP,
-                           suggest=(lambda items: ai.suggest(items, key)) if key else None)
+    return cm.add_comments(clean, os.path.join(d, "review.docx"), min_conf=min_conf, skip_headings=SKIP)
 
 
-def do_final(jid: str, edited: bytes, style: bool, keep_hidden: bool, author: str = "", company: str = "") -> dict:
-    """最終乾淨版：以（人工修改後的）待修版重建，註解整批移除；沒上傳則直接以 clean.docx 重建。"""
+def do_final(jid: str, edited: bytes, style: bool, keep_hidden: bool, author: str = "", company: str = "",
+             name: str = "") -> dict:
+    """最終乾淨版：以（人工修改後的）待修版重建，註解整批移除；沒上傳則直接以 clean.docx 重建。
+
+    有上傳修改版時不依賴先前的工作資料夾：編號空白或已過期，就建立新的資料夾（關掉網頁後也能從這一步接續）。"""
     import zipfile
     author, company = clean_identity(author, company)
+    if edited and not _ID.match(jid or ""):
+        jid = secrets.token_hex(8)
     d = _dir(jid)
     if edited:
+        os.makedirs(d, exist_ok=True)
+        nm = os.path.join(d, "name.txt")
+        if not os.path.exists(nm):
+            with open(nm, "w", encoding="utf-8") as f:
+                f.write((os.path.basename(name) or "document.docx")[:200])
         src = os.path.join(d, "edited.docx")
         with open(src, "wb") as f:
             f.write(edited)
@@ -156,7 +168,7 @@ def do_final(jid: str, edited: bytes, style: bool, keep_hidden: bool, author: st
     rv = suspect.analyze(out, SKIP)
     ctx = rep.get("style_ctx")
     log = {g: {"count": len(items), "examples": ctx.examples(g)} for g, items in ctx.log.items()} if ctx is not None else {}
-    return {"dropped": rep["dropped"], "after": sc.as_dicts(after), "diffs": vf.compare(src, out), "style_log": log,
+    return {"id": jid, "dropped": rep["dropped"], "after": sc.as_dicts(after), "diffs": vf.compare(src, out), "style_log": log,
             "removed_comments": removed, "risk_after": _risk(after, rv)}
 
 
@@ -278,18 +290,17 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(do_clean(q.get("id", [""])[0], flag("style"), flag("keep_hidden"),
                                            q.get("author", [""])[0], q.get("company", [""])[0]))
             if u.path == "/api/review":
-                return self._json(do_review(q.get("id", [""])[0], q.get("min_conf", ["中"])[0],
-                                            self.headers.get("X-Claude-Api-Key", "")))
+                return self._json(do_review(q.get("id", [""])[0], q.get("min_conf", ["中"])[0]))
             if u.path == "/api/final":
                 flag = lambda k: q.get(k, ["0"])[0] == "1"
                 if body and body[:2] != b"PK":
                     return self._json({"error": "這不是 .docx 檔（不是 zip 格式）"}, 400)
                 return self._json(do_final(q.get("id", [""])[0], body, flag("style"), flag("keep_hidden"),
-                                           q.get("author", [""])[0], q.get("company", [""])[0]))
+                                           q.get("author", [""])[0], q.get("company", [""])[0], q.get("name", [""])[0]))
         except SAFE_ERRORS as e:
             msg = str(e)
             if isinstance(e, FileNotFoundError) and TTL_SECONDS:
-                msg = "工作已過期（暫存只保留 %d 分鐘），請重新掛號" % (TTL_SECONDS // 60)
+                msg = "工作已過期（閒置超過 %d 分鐘會清除暫存）。若已有改好的待修版，可回首頁點「直接去收費處」" % (TTL_SECONDS // 60)
             return self._json({"error": msg}, 500)
         except Exception as e:  # 不把內部路徑等細節回給使用者
             print("wmr web error:", type(e).__name__, e, file=sys.stderr)
