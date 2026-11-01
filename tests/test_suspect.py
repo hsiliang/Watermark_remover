@@ -184,3 +184,34 @@ def test_generic_is_document_level_when_everything_is_generic(tmp_path):
     r = analyze(_doc(tmp_path, [("p", generic)] * 6))
     assert "generic" not in cats(r)                       # 全部都空泛 → 不逐段標示（無法區分）
     assert r.metrics["具體資訊稀少的段落比例"] >= 0.9    # 改以文件層級指標呈現
+
+
+CITES = "王小明（2021）。數位轉型研究。管理學報。陳大文（2022）。組織變革分析。管理評論。李小華（2023）。資料治理探討。資訊學刊。林志強（2024）。平台經濟觀察。經濟論叢。"
+PROSE_UNIFORM = "這是一個長度相當的句子啊。" * 6
+PROSE_VARIED = ["今天天氣很好。可是到了下午突然開始下起很大的雨來。我沒帶傘。只好在騎樓底下等了將近一個小時才等到雨停。回家。" + c for c in "甲乙丙丁戊"]
+
+
+def _table_doc(tmp_path, cell, body):
+    d = Document()
+    for t in body:
+        d.add_paragraph(t)
+    d.add_table(rows=1, cols=1).cell(0, 0).text = cell
+    out = str(tmp_path / "t.docx")
+    d.save(out)
+    return out
+
+
+def test_table_cell_citations_not_flagged_uniform(tmp_path):
+    r = analyze(_table_doc(tmp_path, CITES, PROSE_VARIED))
+    assert "uniform_sent" not in cats(r)
+
+
+def test_table_cells_do_not_shift_body_uniform_threshold(tmp_path):
+    r = analyze(_table_doc(tmp_path, CITES, [PROSE_UNIFORM] + PROSE_VARIED))
+    flagged = [f for f in r.flags if f.cat == "uniform_sent"]
+    assert len(flagged) == 1 and flagged[0].para == r.paras[0].idx
+
+
+def test_citation_list_in_body_not_flagged_uniform(tmp_path):
+    r = analyze(_doc(tmp_path, [("p", CITES)] + [("p", t) for t in PROSE_VARIED]))
+    assert "uniform_sent" not in cats(r)

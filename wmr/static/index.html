@@ -263,9 +263,10 @@ th{background:#f3eedf}
      <p class="mut" style="margin:0 0 4px">醫師口述、護理師照辦。勾完按下面的按鈕。</p>
      <label class="opt"><input type="checkbox" id="oStyle"><span>啟用文字風格層<small>規則式替換常見 AI 慣用語；不處理參考文獻</small></span></label>
      <label class="opt"><input type="checkbox" id="oKeep"><span>保留隱藏文字<small>預設會刪除隱藏文字</small></span></label>
-     <label class="fld">作者／最後修改者<input type="text" id="oAuthor" maxlength="100" autocomplete="off"></label>
-     <label class="fld">公司<input type="text" id="oCompany" maxlength="100" autocomplete="off"></label>
-     <p class="mut" style="margin:8px 0 0">留空＝使用預設值。</p>
+     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><label class="fld">作者／最後修改者<input type="text" id="oAuthor" maxlength="100" autocomplete="off"></label>
+     <label class="fld">公司<input type="text" id="oCompany" maxlength="100" autocomplete="off"></label></div>
+     <label class="fld">Claude API 金鑰（選填）<input type="password" id="oKey" maxlength="400" autocomplete="off" spellcheck="false" placeholder="不填＝維持一般註解"></label>
+     <p class="mut" style="margin:6px 0 0;font-size:15px">作者、公司留空用預設值。填金鑰後，可疑段落會送到 Anthropic 產生改寫建議，費用由金鑰帳戶支付，金鑰不存檔。</p>
      <div class="row"><button class="btn go" id="order">下達醫囑 ▶</button></div>
     </div>
    </div>
@@ -388,13 +389,13 @@ const enc=encodeURIComponent;
 
 /* 共用狀態（重置時整個換新） */
 const S={};let TOKEN=0;
-function fresh(){Object.assign(S,{step:1,jid:null,info:null,risk:'low',style:false,keep:false,author:'',company:'',clean:null,review:null,fin:null,skip:false,file6:null,busy:false,paid:false})}
+function fresh(){Object.assign(S,{step:1,jid:null,info:null,risk:'low',style:false,keep:false,author:'',company:'',key:'',clean:null,review:null,fin:null,skip:false,file6:null,busy:false,paid:false})}
 fresh();
 
 /* 呼叫後端；錯誤一律丟出 Error（訊息給廣播條用） */
-let api=async(path,body)=>{
+let api=async(path,body,headers)=>{
  let r,j;
- try{r=await fetch(path,{method:'POST',body:body??new Uint8Array(0)})}catch(e){throw new Error('無法連線到伺服器，請確認服務仍在執行')}
+ try{r=await fetch(path,{method:'POST',headers:headers||{},body:body??new Uint8Array(0)})}catch(e){throw new Error('無法連線到伺服器，請確認服務仍在執行')}
  try{j=await r.json()}catch(e){throw new Error('伺服器回應格式異常（HTTP '+r.status+'）')}
  if(!r.ok||j.error)throw new Error(j.error||('HTTP '+r.status));
  return j};
@@ -469,9 +470,9 @@ function chairPatient(o={}){
   ${c?`<g class="leg-stump2"><rect x="16" y="-104" width="62" height="24" rx="11" fill="#fff" ${sw()}/><path d="M34 -104v24M48 -104v24" stroke="#cfd6e4" stroke-width="3"/><path d="M74 -96l14 -10v24Z" fill="#ff8fa3" ${sw(3)}/></g>`:''}
   <path d="M-16 -90L-10 -170Q14 -180 38 -170L44 -90Z" fill="${GOWN}" ${sw()}/>${arm}
   ${head(14,-210,40,{hair:HAIR.pt(40),mood:o.mood||'smile',extra:hb})}</g>`}
-/* 名牌：兩行（職稱／姓氏），flip=所在群組被水平翻轉時讓字保持可讀 */
-const badge=(x,y,title,name,flip)=>{const w=50,h=42,t=`<rect width="${w}" height="${h}" rx="5" fill="#fff" ${sw(3)}/><rect width="${w}" height="14" rx="4" fill="#3a86ff"/><text x="${w/2}" y="11" text-anchor="middle" font-size="10" font-weight="800" fill="#fff">${title}</text><text x="${w/2}" y="36" text-anchor="middle" font-size="24" font-weight="900" fill="${OL}">${name}</text>`;
- return flip?`<g transform="translate(${x+w} ${y}) scale(-1 1)">${t}</g>`:`<g transform="translate(${x} ${y})">${t}</g>`};
+/* 繡在衣服一側的小字；flip=所在群組被水平翻轉時讓字保持可讀 */
+const stitch=(x,y,text,flip)=>{const t=`<text text-anchor="middle" font-size="11" font-weight="700" fill="${OL}" opacity=".65">${text}</text>`;
+ return `<g transform="translate(${x} ${y})${flip?' scale(-1 1)':''}">${t}</g>`};
 const RN=(pose,mood,flip)=>nurse(pose,mood,{name:'徐',flip});
 /* 醫師（腳底原點，面向右）pose: point|cpr|scissors|relax|cross */
 function doctor(pose='stand',mood='smile'){
@@ -489,7 +490,7 @@ function doctor(pose='stand',mood='smile'){
  <path d="M-16 -272L0 -226L16 -272Z" fill="#9ecbff" ${sw(3)}/><path d="M0 -264l-7 12 7 34 7 -34Z" fill="#e63946" ${sw(3)}/>
  <path d="M0 -224V-116" ${sw(3)}/><path d="M20 -214h24v24h-24Z" fill="none" ${sw(3)}/><path d="M26 -216v-12M34 -216v-10" stroke="#3a86ff" stroke-width="4"/>
  <path d="M-22 -270Q-34 -222 -14 -204Q4 -196 8 -210" fill="none" stroke="#555" stroke-width="5"/><circle cx="8" cy="-212" r="7" fill="#bbb" ${sw(3)}/>
- ${arms}${badge(6,-256,'醫師','廖',false)}${head(0,-326,46,{hair:HAIR.doc(46),mood,extra:GLASSES(46)+MIRROR(46)})}</g>`}
+ ${stitch(-26,-150,'廖醫師')}${arms}${head(0,-326,46,{hair:HAIR.doc(46),mood,extra:GLASSES(46)+MIRROR(46)})}</g>`}
 /* 護理師 / 藥師 / 收費員（腳底原點，面向右）pose: stand|note|paddles|syringe|push|run|give */
 function nurse(pose='stand',mood='smile',o={}){
  const top=o.top||'#5ec2b7',pants=o.pants||'#3aa597',sk=o.skin||'#e9b48a';let arms='';
@@ -506,7 +507,7 @@ function nurse(pose='stand',mood='smile',o={}){
  <rect x="-9" y="-232" width="18" height="18" fill="${sk}" ${sw()}/>
  <path d="M-46 -96L-40 -218Q0 -234 40 -218L46 -96Z" fill="${top}" ${sw()}/><path d="M-14 -224L0 -200L14 -224" fill="none" ${sw(3)}/>
  ${o.apron?`<path d="M-30 -196H30L36 -100H-36Z" fill="${o.apron}" ${sw(3)}/>`:''}
- ${arms}${o.name?badge(-48,-208,'護理師',o.name,o.flip):''}${head(0,-262,42,{skin:sk,hair:(o.hair||HAIR.nurse)(42),mood,extra:(o.cap===false?'':CAP(42))+(o.extra||'')})}</g>`}
+ ${o.name?stitch(-14,-146,o.name+'護理師',o.flip):''}${arms}${head(0,-262,42,{skin:sk,hair:(o.hair||HAIR.nurse)(42),mood,extra:(o.cap===false?'':CAP(42))+(o.extra||'')})}</g>`}
 /* 房間：牆、護牆板、地板；win=挖空窗戶（露出遠景視差層） */
 function room(wall,trim,win=[]){
  const holes=win.map(([x,y,w,h])=>`M${x} ${y}h${w}v${h}h${-w}Z`).join('');
@@ -734,7 +735,7 @@ async function upload(f){
  }catch(e){if(t!==TOKEN)return;S.busy=false;$('lamp').classList.remove('busy');$('lampTx').textContent='退件';$('slipStat').textContent='退件，請重新遞交';$('stamp1w').classList.remove('show');$('clerkSay').textContent='這份我收不了…';cast('上傳失敗：'+e.message)}}
 function setInfo(r){S.info=r;S.jid=r.id;S.risk=(r.risk&&r.risk.level)||'low';
  $('stage').classList.remove('rk-high','rk-medium','rk-low');$('stage').classList.add('rk-'+S.risk);
- $('oStyle').checked=false;$('oKeep').checked=false;$('oAuthor').value=r.defaults?.author||'';$('oCompany').value=r.defaults?.company||''}
+ $('oStyle').checked=false;$('oKeep').checked=false;$('oAuthor').value=r.defaults?.author||'';$('oCompany').value=r.defaults?.company||'';$('oKey').value=''}
 
 /* ============ S2 檢測 ============ */
 function showSet(scene,key){$(scene).querySelectorAll('[data-show]').forEach(g=>g.toggleAttribute('hidden',!g.dataset.show.split(' ').includes(key)))}
@@ -763,7 +764,7 @@ $('ctNext').onclick=()=>{if(S.step===2)go(3)};
 
 /* ============ S3 醫囑 ============ */
 function enter3(){$('order').disabled=false}
-$('order').onclick=()=>{if(S.step!==3)return;S.style=$('oStyle').checked;S.keep=$('oKeep').checked;S.author=$('oAuthor').value.trim();S.company=$('oCompany').value.trim();$('order').disabled=true;go(4)};
+$('order').onclick=()=>{if(S.step!==3)return;const key=$('oKey').value.trim();if(!/^[\x21-\x7e]*$/.test(key)){cast('Claude API 金鑰格式不正確');return}S.key=key;S.style=$('oStyle').checked;S.keep=$('oKeep').checked;S.author=$('oAuthor').value.trim();S.company=$('oCompany').value.trim();$('order').disabled=true;go(4)};
 const qs=()=>`id=${enc(S.jid)}&style=${S.style?1:0}&keep_hidden=${S.keep?1:0}&author=${enc(S.author)}&company=${enc(S.company)}`;
 
 /* ============ S4 治療 ============ */
@@ -792,14 +793,14 @@ $('cNext').onclick=()=>{if(S.step===4)go(5)};
 /* ============ S5 處方（待修版） ============ */
 function reset5(){$('paper').className='';$('printer').classList.remove('shake');$('plcd').textContent='待機';$('pled').setAttribute('fill','#999');$('rvSt').innerHTML='處方列印中<span class="dots"></span>';$('rvSt').className='mut';$('rvBtns').hidden=true;$('rvNone').hidden=true;$('rvRetry').hidden=true;$('say5').hidden=true}
 async function doReview(){
- const t=TOKEN;reset5();cast('');$('printer').classList.add('shake');$('plcd').textContent='列印中';$('pled').setAttribute('fill','#ffbe3d');
+ const t=TOKEN;reset5();cast(S.key?'Claude 正在寫改寫建議，段落多時最久約 3 分鐘…':'');$('printer').classList.add('shake');$('plcd').textContent='列印中';$('pled').setAttribute('fill','#ffbe3d');
  try{
-  const [r]=await Promise.all([api('/api/review?id='+enc(S.jid)+'&min_conf='+enc('中')),sleep(1200)]);if(t!==TOKEN)return;S.review=r;
+  const [r]=await Promise.all([api('/api/review?id='+enc(S.jid)+'&min_conf='+enc('中'),null,S.key?{'X-Claude-Api-Key':S.key}:null),sleep(1200)]);if(t!==TOKEN)return;S.review=r;
   $('pName').textContent=S.info.name.replace(/\.docx$/i,'')+'_待修版.docx';
   $('pCnt').textContent=r.comments?`共 ${r.comments} 則註解／${r.paragraphs} 段`:'沒有需要人工處理的段落';
   $('paper').classList.add('out');await sleep(2600);if(t!==TOKEN)return;
   $('printer').classList.remove('shake');$('plcd').textContent='完成';$('pled').setAttribute('fill','#2ecc71');$('say5').hidden=false;
-  $('rvSt').textContent=r.comments?`待修版已產生：共 ${r.comments} 則註解，分布在 ${r.paragraphs} 段。`:'待修版已產生。';$('rvSt').className='';
+  cast('');$('rvSt').textContent=(r.comments?`待修版已產生：共 ${r.comments} 則註解，分布在 ${r.paragraphs} 段。`:'待修版已產生。')+(r.ai?`Claude 建議 ${r.ai.done}/${r.ai.requested} 段。${r.ai.error||''}`:'');$('rvSt').className='';
   $('rvNone').hidden=!!r.comments;$('rvDl').href='/download/'+enc(S.jid)+'/review';$('rvBtns').hidden=false;
   if(!r.comments&&!DEMO){await sleep(1800);if(t!==TOKEN||S.step!==5)return;S.skip=true;go(6)}   // 沒有需人工處理的段落：自動前往繳費（跳過模式）
  }catch(e){if(t!==TOKEN)return;$('printer').classList.remove('shake');$('plcd').textContent='卡紙';$('pled').setAttribute('fill','#ff3b3b');
@@ -850,7 +851,7 @@ async function enter7(){
 $('fMore').onclick=()=>cleanDetails(S.fin||{},'最終版詳情');
 $('again').onclick=()=>{TOKEN++;fresh();follow=null;cast('');if($('dlg').open)$('dlg').close();
  $('stage').classList.remove('rk-high','rk-medium','rk-low');
- reset1();reset2();reset4();reset5();reset6();reset7();$('oStyle').checked=false;$('oKeep').checked=false;$('oAuthor').value='';$('oCompany').value='';$('order').disabled=false;
+ reset1();reset2();reset4();reset5();reset6();reset7();$('oStyle').checked=false;$('oKeep').checked=false;$('oAuthor').value='';$('oCompany').value='';$('oKey').value='';$('order').disabled=false;
  hud(1);cam(1)};
 
 /* ============ 初始化 ============ */

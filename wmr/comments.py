@@ -9,10 +9,11 @@ from __future__ import annotations
 import datetime as _dt
 import re
 import zipfile
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from lxml import etree
 
+from .ai import mismatches
 from .common import NS_CT, NS_REL, NS_W, TOOL_COMMENT_AUTHOR
 from .rebuild import DECL, _ser
 from .suspect import CATEGORIES, CONF_WEIGHT, analyze
@@ -38,6 +39,16 @@ def _lines(flags) -> List[str]:
     return out
 
 
+def _suggestion_lines(original: str, text: str) -> List[str]:
+    out = ["【Claude 改寫建議】僅供參考，不會自動寫入文件；採用前請逐句核對："]
+    gone, added = mismatches(original, text)
+    if gone or added:
+        out.append("⚠ 數字或英文詞有變動，請核對。%s%s" % (
+            "不見：%s。" % "、".join(gone) if gone else "", "多出：%s。" % "、".join(added) if added else ""))
+    out.append(text)
+    return out
+
+
 def _comment_el(cid: int, lines: List[str], date: str):
     c = etree.Element(W + "comment")
     c.set(W + "id", str(cid))
@@ -53,8 +64,9 @@ def _comment_el(cid: int, lines: List[str], date: str):
     return c
 
 
-def add_comments(src: str, dst: str, min_conf: str = "中", skip_headings=None) -> Dict:
-    """回傳 {"comments": 註解數, "paragraphs": 段數}。"""
+def add_comments(src: str, dst: str, min_conf: str = "中", skip_headings=None,
+                 suggest: Optional[Callable[[List[Dict]], Dict]] = None) -> Dict:
+    """回傳 {"comments": 註解數, "paragraphs": 段數}；有 suggest 時另含 "ai"（見 ai.suggest）。"""
     rv = analyze(src) if skip_headings is None else analyze(src, tuple(skip_headings))
     order = {"低": 0, "中": 1, "高": 2}
     by_para: Dict[int, List] = {}
@@ -64,6 +76,12 @@ def add_comments(src: str, dst: str, min_conf: str = "中", skip_headings=None) 
         if order[f.conf] >= order[min_conf]:
             by_para.setdefault(f.para, []).append(f)
     paras = {p.idx: p for p in rv.paras}
+    ai = None
+    if suggest is not None:
+        ai = suggest([{"idx": i, "text": paras[i].text, "flags": sorted({f.label for f in by_para[i]}),
+                       "weight": max(CONF_WEIGHT[f.conf] for f in by_para[i])}
+                      for i in sorted(by_para) if not paras[i].is_heading and not paras[i].in_table])
+    extra = (ai or {}).pop("suggestions", {})
     with zipfile.ZipFile(src) as z:
         names = z.namelist()
         existing = etree.fromstring(z.read("word/comments.xml")) if "word/comments.xml" in names else None
@@ -79,7 +97,10 @@ def add_comments(src: str, dst: str, min_conf: str = "中", skip_headings=None) 
         p = paras[idx].element
         cid = nxt + n
         n += 1
-        comments.append(_comment_el(cid, _lines(by_para[idx]), date))
+        lines = _lines(by_para[idx])
+        if idx in extra:
+            lines += _suggestion_lines(paras[idx].text, extra[idx])
+        comments.append(_comment_el(cid, lines, date))
         start = etree.Element(W + "commentRangeStart"); start.set(W + "id", str(cid))
         end = etree.Element(W + "commentRangeEnd"); end.set(W + "id", str(cid))
         ref = etree.Element(W + "r")
@@ -95,7 +116,7 @@ def add_comments(src: str, dst: str, min_conf: str = "中", skip_headings=None) 
         with zipfile.ZipFile(src) as zin, zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zo:
             for info in zin.infolist():
                 zo.writestr(info, zin.read(info.filename))
-        return {"comments": 0, "paragraphs": 0}
+        return {"comments": 0, "paragraphs": 0, **({"ai": ai} if ai else {})}
     if existing is None:
         ids = {r.get("Id") for r in rels}
         k = 1
@@ -118,4 +139,4 @@ def add_comments(src: str, dst: str, min_conf: str = "中", skip_headings=None) 
             zi.create_system = 0
             zi.external_attr = 0
             zo.writestr(zi, blobs[name])
-    return {"comments": n, "paragraphs": len(by_para)}
+    return {"comments": n, "paragraphs": len(by_para), **({"ai": ai} if ai else {})}

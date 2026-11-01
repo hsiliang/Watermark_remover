@@ -17,7 +17,22 @@
 - 網址：`https://wmr-9b0686fe.azurewebsites.net/`（資源群組 `wmr-rg`，區域 eastasia，B1）。
 - 驗證：首頁 200、`robots.txt`、`X-Robots-Tag`、非允許 Host 被拒；用只有一句話的測試檔跑完 upload→clean→review→final→download，複掃零發現。**未用真實論文測試**。
 
-## 更新程式後重新部署（Cloud Shell）
+## GitHub Actions 自動部署
+推到 `main` 後，`.github/workflows/deploy-azure.yml` 會先跑測試，通過才部署，最後檢查網站有回應。只改 `docs/`、`*.md`、`bench/` 不會觸發；也可在 Actions 頁面手動執行。
+
+只需設定一次（依 Microsoft Learn 與 GitHub 文件，2026-11 核對）：
+
+**Azure 入口網站**（App Services → `wmr-9b0686fe`）
+1. 「Configuration → General settings」：**SCM Basic Auth Publishing Credentials** 設為 On，儲存。
+2. 「Environment variables」：新增 `WEBSITE_WEBDEPLOY_USE_SCM`＝`true`（Linux 必須在下載設定檔**之前**設定），儲存。
+3. 回到 Overview，按 **Download publish profile**，下載 `.PublishSettings` 檔。
+
+**GitHub**（不是 Azure）：`https://github.com/hsiliang/Watermark_remover/settings/secrets/actions`
+4. Secrets 分頁 → New repository secret；Name 填 `AZURE_WEBAPP_PUBLISH_PROFILE`，Secret 貼上該檔的全部內容。
+
+發行設定檔等同部署密碼，不要貼到 issue 或聊天室；外洩時在入口網站重設。
+
+## 手動重新部署（Cloud Shell，備用）
 1. 本機：`git archive --format=zip HEAD -o out/wmr.zip`，在 Cloud Shell 上傳覆蓋 `~/wmr.zip`。
 2. `az webapp deploy -g wmr-rg -n wmr-9b0686fe --src-path ~/wmr.zip --type zip`
 

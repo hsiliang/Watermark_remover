@@ -69,6 +69,7 @@ _BIG_RE = re.compile("|".join(re.escape(w) for w in BIGWORDS) + r"|扮演著?.{0
 _NEG_RE = re.compile(r"不(?:僅|只(?!一[個項種位])|單|但)[^。！？\n]{1,30}?(?:而且|還|更|也|並且|同時)|並非[^。！？\n]{1,30}?而是|不是[^。！？\n]{1,30}?而是"
                      r"|\bnot (?:just|only|merely)\b[^.\n]{1,60}?\bbut\b", re.I)
 _VAGUE_RE = re.compile(r"(?<!本)(?:相關|大量|許多|已有|現有|眾多|多項|多數)?(?<!本)(?:研究|文獻|實證|調查|學者|實踐)(?:均|皆|都|已)?(?:表明|顯示|指出|證明|發現|認為|表示|證實)")
+_REF_ENTRY_RE = re.compile(r"[（(](?:19|20)\d{2}[a-z]?[）)]\s*[。.]")
 _CITE_RE = re.compile(r"(?:19|20)\d{2}|\[\d+(?:[,，\-–]\d+)*\]")
 _TRIAD_RE = re.compile(r"首先[^\n]{0,160}?其次[^\n]{0,160}?(?:最後|再者|再次|此外|另外|最終|第三)|第一[^\n]{0,140}?第二[^\n]{0,140}?第三")
 _RESTATE_RE = re.compile(r"換言之|換句話說|也就是說|這意味著|這也說明|這也就是為什麼|這也是為什麼|更重要的是|不可否認|不難看出|由此可見")
@@ -93,6 +94,7 @@ class Para:
     first_bold: bool
     bold_ratio: float
     element: Optional[object] = field(default=None, repr=False, compare=False)
+    in_table: bool = False
 
 
 @dataclass
@@ -117,6 +119,17 @@ def _style_names(z: zipfile.ZipFile) -> Dict[str, str]:
         return {}
     return {s.get(W + "styleId"): (s.find(W + "name").get(W + "val") if s.find(W + "name") is not None else "")
             for s in root.iter(W + "style")}
+
+
+def _in_table(p) -> bool:
+    return next(p.iterancestors(W + "tc"), None) is not None
+
+
+def _mostly_citations(text: str, sents: List[str]) -> bool:
+    """文獻清單的句長一致不代表文風：有多筆「作者（年）。」條目，或過半句子含年份／文獻編號。"""
+    if len(_REF_ENTRY_RE.findall(text)) >= 2:
+        return True
+    return bool(sents) and sum(1 for s in sents if _CITE_RE.search(s)) * 2 >= len(sents)
 
 
 def para_text(p) -> str:
@@ -201,7 +214,7 @@ def extract_paragraphs(path: str, skip_headings=("參考文獻", "參考資料",
             bold_chars += len(t) if is_b else 0
         n += 1
         paras.append(Para(n, text, " > ".join(h for _, h in path_stack), style, is_h,
-                          first_bold, (bold_chars / tot) if tot else 0.0, p))
+                          first_bold, (bold_chars / tot) if tot else 0.0, p, _in_table(p)))
     return paras
 
 
@@ -278,7 +291,11 @@ def analyze(path: str, skip_headings=("參考文獻", "參考資料", "Reference
     para_cv: Dict[int, float] = {}
     de_rate: Dict[int, float] = {}
     for p in body:
+        if p.in_table:      # 表格內是資料或文獻，不是文章的句子，也不納入全文分布
+            continue
         ss = sentences(p.text)
+        if _mostly_citations(p.text, ss):
+            continue
         ls = [slen(s) for s in ss if slen(s) >= 2]
         sent_lens_all += ls
         if len(ls) >= 4:

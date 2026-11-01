@@ -11,6 +11,8 @@
 
 流程：上傳 docx → 檢測＋可疑部位統計 → 按下清理 → 下載。
 清理使用的仍是純本地的 rebuild／finalize，不呼叫任何 AI 或 Word。
+唯一的例外是選用的改寫建議：使用者自備 Claude API 金鑰時，產生待修版會把段落送到 Anthropic，
+建議只寫進註解；金鑰由 X-Claude-Api-Key 標頭傳入（不放網址，避免進入存取紀錄），不寫入檔案。
 """
 from __future__ import annotations
 
@@ -28,7 +30,7 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from .common import AUTHOR, COMPANY, clean_identity
-from . import comments as cm, finalize, rebuild as rb, report, scan as sc, suspect, verify as vf
+from . import ai, comments as cm, finalize, rebuild as rb, report, scan as sc, suspect, verify as vf
 
 def _env_int(name: str, default: int) -> int:
     try:
@@ -114,7 +116,7 @@ def do_clean(jid: str, style: bool, keep_hidden: bool, author: str = "", company
             "risk_before": _risk(sc.scan(src), suspect.analyze(src, SKIP)), "risk_after": _risk(after, rv)}
 
 
-def do_review(jid: str, min_conf: str = "中") -> dict:
+def do_review(jid: str, min_conf: str = "中", api_key: str = "") -> dict:
     """待修版：在 clean.docx 上為需人工處理的段落加註解。"""
     if min_conf not in ("低", "中", "高"):
         raise ValueError("min_conf 不合法")
@@ -122,7 +124,9 @@ def do_review(jid: str, min_conf: str = "中") -> dict:
     clean = os.path.join(d, "clean.docx")
     if not os.path.exists(clean):
         raise FileNotFoundError("請先清理")
-    return cm.add_comments(clean, os.path.join(d, "review.docx"), min_conf=min_conf, skip_headings=SKIP)
+    key = ai.check_key(api_key)
+    return cm.add_comments(clean, os.path.join(d, "review.docx"), min_conf=min_conf, skip_headings=SKIP,
+                           suggest=(lambda items: ai.suggest(items, key)) if key else None)
 
 
 def do_final(jid: str, edited: bytes, style: bool, keep_hidden: bool, author: str = "", company: str = "") -> dict:
@@ -274,7 +278,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(do_clean(q.get("id", [""])[0], flag("style"), flag("keep_hidden"),
                                            q.get("author", [""])[0], q.get("company", [""])[0]))
             if u.path == "/api/review":
-                return self._json(do_review(q.get("id", [""])[0], q.get("min_conf", ["中"])[0]))
+                return self._json(do_review(q.get("id", [""])[0], q.get("min_conf", ["中"])[0],
+                                            self.headers.get("X-Claude-Api-Key", "")))
             if u.path == "/api/final":
                 flag = lambda k: q.get(k, ["0"])[0] == "1"
                 if body and body[:2] != b"PK":
