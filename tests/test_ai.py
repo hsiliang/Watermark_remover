@@ -56,7 +56,10 @@ def test_sdk_request_shape(fake_api):
     assert r["suggestions"] == {3: "改寫後的 2024 段落"} and r["done"] == 1 and r["error"] == ""
     q = fake_api["requests"][0]
     assert q["body"]["model"] == "claude-opus-5-5" and q["body"]["fallbacks"] == "default"
-    assert q["headers"]["anthropic-beta"] == ai.FALLBACK_BETA and q["headers"]["x-api-key"] == KEY
+    h = q["headers"]
+    assert h["anthropic-beta"] == ai.FALLBACK_BETA
+    # SDK 0.x 用 x-api-key，2.x 改用 Authorization: Bearer；金鑰都必須完整送出
+    assert h.get("x-api-key") == KEY or h.get("authorization") == "Bearer " + KEY
     assert q["body"]["output_config"] == {"effort": "medium"}
     assert "<paragraph>\n原文 2024\n</paragraph>" in q["body"]["messages"][0]["content"]
 
