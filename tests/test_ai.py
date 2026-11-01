@@ -27,7 +27,7 @@ def fake_api():
 
         def do_POST(self):
             body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-            state["requests"].append({"path": self.path, "headers": dict(self.headers), "body": body})
+            state["requests"].append({"path": self.path, "headers": {k.lower(): v for k, v in self.headers.items()}, "body": body})
             if state["status"] != 200:
                 out = {"type": "error", "error": {"type": "authentication_error", "message": "invalid x-api-key"}}
             else:
@@ -56,7 +56,7 @@ def test_sdk_request_shape(fake_api):
     assert r["suggestions"] == {3: "改寫後的 2024 段落"} and r["done"] == 1 and r["error"] == ""
     q = fake_api["requests"][0]
     assert q["body"]["model"] == "claude-opus-5-5" and q["body"]["fallbacks"] == "default"
-    assert q["headers"]["anthropic-beta"] == ai.FALLBACK_BETA and q["headers"]["X-Api-Key"] == KEY
+    assert q["headers"]["anthropic-beta"] == ai.FALLBACK_BETA and q["headers"]["x-api-key"] == KEY
     assert q["body"]["output_config"] == {"effort": "medium"}
     assert "<paragraph>\n原文 2024\n</paragraph>" in q["body"]["messages"][0]["content"]
 
