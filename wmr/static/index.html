@@ -855,7 +855,8 @@ $('ctNext').onclick=()=>{if(S.step===2)go(3)};
 
 /* ============ S3 手術同意書 ============ */
 const PREF_KEY='wmr.prefs.v1';
-function loadPrefs(){try{return JSON.parse(localStorage.getItem(PREF_KEY)||'{}')||{}}catch(e){return{}}}
+function loadPrefs(){try{const P=JSON.parse(localStorage.getItem(PREF_KEY)||'{}')||{};
+ if(P.author==='Hsi Liang')delete P.author;if(P.company==='https://github.com/hsiliang')delete P.company;return P}catch(e){return{}}}
 function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify({style:S.style,keep:S.keep,author:S.author,company:S.company,pain:S.pain}))}catch(e){}}
 function applyPrefs(def){const P=loadPrefs();$('oStyle').checked=!!P.style;$('oKeep').checked=!!P.keep;$('oAuthor').value=P.author||def?.author||'';$('oCompany').value=P.company||def?.company||'';$('oPain').value=P.pain??0;$('oPainV').textContent=$('oPain').value;$('oAgree').checked=false;$('order').disabled=true}
 function enter3(){$('sigName').textContent=(S.info&&S.info.name?S.info.name.replace(/\.docx$/i,''):'')||'　　　　';$('order').disabled=!$('oAgree').checked}
