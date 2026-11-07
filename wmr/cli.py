@@ -64,6 +64,8 @@ def main(argv=None) -> int:
     ap_.add_argument("edits")
     ap_.add_argument("-o", "--out", required=True)
     ap_.add_argument("--force", action="store_true", help="含超連結／欄位等也強制替換（可能破壞該段結構）")
+    ft = sub.add_parser("synctime", help="讀取 docx 統計資料的建立／修改時間，設定為檔案系統的建立／修改時間（Word「內容→通用」分頁）")
+    ft.add_argument("file")
     w = sub.add_parser("web", help="啟動本機網頁介面（僅 127.0.0.1）")
     w.add_argument("--port", type=int, default=8765)
     w.add_argument("--host", default="127.0.0.1", help="綁定位址（預設只限本機；部署用 0.0.0.0，並以 WMR_ALLOWED_HOSTS 設定允許的網域）")
@@ -93,6 +95,16 @@ def main(argv=None) -> int:
         web.serve(a.port, clear=not a.keep, host=a.host)
         return 0
 
+    if a.cmd == "synctime":
+        from . import filetime
+        try:
+            r = filetime.sync_file_times(a.file)
+        except (ValueError, OSError) as e:
+            print("失敗：%s" % e, file=sys.stderr)
+            return 1
+        loc = lambda d: d.astimezone().strftime("%Y-%m-%d %H:%M:%S")
+        print("%s\n  建立時間：%s\n  修改時間：%s（皆為本機時區）" % (r["note"], loc(r["created"]), loc(r["modified"])))
+        return 0
     if a.cmd == "export":
         from . import edits
         n = edits.export_edits(a.file, a.out, min_conf=a.min_conf)

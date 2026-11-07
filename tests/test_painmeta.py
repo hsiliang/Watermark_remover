@@ -43,3 +43,19 @@ def test_factors_are_deterministic_and_web_parse():
     import pytest
     with pytest.raises(ValueError):
         _pain({"pain": ["7"], "rb": ["5"], "rc": ["1"], "rd": ["1"]})
+
+
+def test_synctime_sets_file_times(dirty_docx, tmp_path):
+    import os
+    import sys
+    from wmr import filetime, finalize, rebuild
+
+    out = str(tmp_path / "o.docx")
+    rebuild.rebuild(str(dirty_docx), out)
+    finalize.finalize_props(out, pain=8)
+    c, m = filetime.read_times(out)
+    filetime.sync_file_times(out)
+    st = os.stat(out)
+    assert abs(st.st_mtime - m.timestamp()) < 2
+    if sys.platform == "darwin":
+        assert abs(st.st_birthtime - c.timestamp()) < 2
