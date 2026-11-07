@@ -78,6 +78,7 @@ def main(argv=None) -> int:
     c.add_argument("--review", action="store_true", help="清理後產出可疑部位報告與標註副本")
     c.add_argument("--author", default=None, help="最終檔的作者／最後修改者（預設 %s）" % AUTHOR)
     c.add_argument("--company", default=None, help="最終檔的公司（預設 %s）" % COMPANY)
+    c.add_argument("--pain", type=float, default=None, help="斧大管你學院強制認捐 0~10：決定建立時間、編輯總時間、修訂版編號（預設不動）")
     c.add_argument("--keep-hidden", action="store_true", help="不刪除隱藏文字")
     c.add_argument("--page-check", action="store_true", help="用 Word 重存原檔與輸出檔，比對頁數／字數")
     a = ap.parse_args(argv)
@@ -131,7 +132,7 @@ def main(argv=None) -> int:
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     with open(cur, "rb") as fi, open(a.out, "wb") as fo:
         fo.write(fi.read())
-    finalize.finalize_props(a.out, author, company)  # 純本地最後一步
+    finalize.finalize_props(a.out, author, company, a.pain)  # 純本地最後一步
     after = sc.scan(a.out, style=a.style, author=author, company=company)
     print("\n== 清理後 ==\n" + sc.summarize(after))
     diffs = vf.compare(a.file, a.out)

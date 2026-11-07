@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Watermark Remover · 輔大醫院</title><link rel="icon" href="data:,">
+<title>Watermark Remover · 斧大醫院</title><link rel="icon" href="data:,">
 <style>
 :root{--ol:#2b2d42;--ink:#1f2333;--paper:#fffdf6;--hi:#d62828;--md:#d97706;--lo:#2a9d8f;--ok:#1f9d55;--k:1}
 *{box-sizing:border-box}[hidden]{display:none!important}
@@ -112,9 +112,25 @@ svg{overflow:visible}svg *{stroke-linejoin:round;stroke-linecap:round}
 .agree{display:flex;gap:12px;align-items:flex-start;margin-top:8px;font-weight:900;font-size:20px;cursor:pointer}
 .agree input{width:28px;height:28px;margin:2px 0 0;accent-color:#d62828;flex:none}
 .sigline{margin-top:2px;font-size:17px;color:#5c6378}.sigline span{font-family:'Snell Roundhand',cursive;font-size:26px;color:#1d4e89;border-bottom:2px solid var(--ol);padding:0 18px}
-.dsign{position:absolute;background:#1f7a5a;color:#fff;border:4px solid var(--ol);border-radius:12px;padding:8px 16px;font:inherit;font-weight:900;font-size:19px;cursor:pointer;box-shadow:5px 5px 0 rgba(43,45,66,.2);line-height:1.35;text-align:left}
-.dsign small{display:block;font-weight:600;font-size:14px;color:#cfeee2}
-.dsign:hover{background:#26946f}.dsign:focus-visible{outline:4px solid #3a86ff;outline-offset:2px}
+.standee{position:absolute;background:transparent;border:0;padding:0;cursor:pointer;transform-origin:50% 100%;transition:transform .15s}
+.standee svg{display:block;width:100%;height:100%;overflow:visible}
+.standee:hover,.standee:focus-visible{transform:rotate(-1.5deg) scale(1.03)}.standee:focus-visible{outline:4px solid #3a86ff;outline-offset:4px;border-radius:10px}
+.glasshit{position:absolute;background:transparent;border:0;padding:0;cursor:default;-webkit-tap-highlight-color:transparent}
+.cAngry{display:none}.awake .cSleepy{display:none}.awake .cAngry{display:inline}
+.awake .clerkG{animation:clerkshake .09s linear infinite alternate}
+@keyframes clerkshake{from{transform:translate(-5px,0)}to{transform:translate(5px,-4px)}}
+#clerkSay.angry,.bubble.angry{color:#d62828;border-color:#d62828;font-size:30px;font-weight:900;animation:yell .18s linear infinite alternate}
+.transfer{position:absolute;left:1010px;top:340px;width:400px;background:#fffdf2;border:4px solid var(--ol);border-radius:8px;padding:14px 20px 16px;box-shadow:6px 6px 0 rgba(43,45,66,.25);transform:rotate(-2deg);z-index:6;animation:tdrop .45s cubic-bezier(.2,1.4,.4,1)}
+.transfer[hidden]{display:none}
+.transfer h3{margin:0 0 6px;font-size:26px;letter-spacing:6px;text-align:center;border-bottom:3px double var(--ol);padding-bottom:6px}
+.transfer p{margin:6px 0;font-size:17px;font-weight:700;line-height:1.5}
+.transfer .tstamp{position:absolute;right:18px;top:86px;border:5px solid #d62828;color:#d62828;border-radius:10px;padding:2px 12px;font-size:30px;font-weight:900;transform:rotate(-14deg);opacity:.85;background:rgba(255,255,255,.5)}
+.transfer button{display:block;margin:10px auto 0;font:inherit;font-weight:900;font-size:17px;padding:6px 18px;border:4px solid var(--ol);border-radius:12px;background:#ffd23f;cursor:pointer}
+@keyframes tdrop{from{transform:translateY(-40px) rotate(6deg);opacity:0}to{transform:rotate(-2deg);opacity:1}}
+.patg{transform-box:fill-box;transform-origin:50% 100%;transition:transform .8s cubic-bezier(.3,1.6,.5,1);transform:scale(var(--fx,1),var(--fy,1))}
+.gflash{position:absolute;pointer-events:none;background:#fff;opacity:0}
+.gflash.on{animation:gflash .35s ease-out}
+@keyframes gflash{from{opacity:.7}to{opacity:0}}
 .pref6{margin-top:8px;padding:8px 12px;border:3px dashed #9aa1b5;border-radius:10px;font-size:16px}
 .pref6 label.ck{display:inline-flex;gap:6px;align-items:center;margin-right:14px;font-weight:700}
 .pref6 .fld{font-size:15px;margin-top:6px}.pref6 .fld input{font-size:16px;padding:5px 8px}
@@ -257,8 +273,26 @@ th{background:#f3eedf}
     <dl><dt>科　別</dt><dd>AI 痕跡科（門診）</dd><dt>病　人</dt><dd id="slipName">（尚未收件）</dd><dt>狀　態</dt><dd id="slipStat">待收件</dd><dt>醫　師</dt><dd>值班醫師（看心情）</dd></dl>
     <div class="stamp" id="stamp1" style="right:16px;bottom:18px">已收件</div>
    </div>
-   <button class="dsign" id="directPay" style="left:600px;top:250px;width:255px">▶ 收費處／藥局<small>已經有改好的待修版？點這裡直接繳費領藥</small></button>
+   <button class="standee" id="directPay" style="left:1330px;top:470px;width:230px;height:340px" aria-label="收費處／藥局：已經有改好的待修版？點這裡直接繳費領藥"><svg viewBox="0 0 230 340" aria-hidden="true">
+    <ellipse cx="115" cy="326" rx="78" ry="10" fill="rgba(43,45,66,.22)"/>
+    <path d="M52 318h126l-10 -22h-106Z" fill="#4a4e69" stroke="#2b2d42" stroke-width="4" stroke-linejoin="round"/>
+    <rect x="106" y="226" width="18" height="72" fill="#9aa0b5" stroke="#2b2d42" stroke-width="4"/>
+    <rect x="22" y="14" width="186" height="216" rx="12" fill="#d9eef7" stroke="#2b2d42" stroke-width="5"/>
+    <rect x="32" y="24" width="166" height="196" rx="6" fill="#bfe6f2" opacity=".55"/>
+    <path d="M44 40l44 -10M44 66l92 -26" stroke="#fff" stroke-width="5" opacity=".7" stroke-linecap="round"/>
+    <g transform="rotate(-3 115 125)"><path d="M46 42h138v168H46Z" fill="#fffdf2" stroke="#2b2d42" stroke-width="3"/>
+     <path d="M46 42h138v14H46Z" fill="#f1ecd0"/>
+     <text x="115" y="96" text-anchor="middle" font-size="25" font-weight="900" fill="#1f7a5a">▶ 收費處</text>
+     <text x="115" y="128" text-anchor="middle" font-size="25" font-weight="900" fill="#1f7a5a">／藥局</text>
+     <path d="M62 142h106" stroke="#c9c3a0" stroke-width="2" stroke-dasharray="5 4"/>
+     <text x="115" y="164" text-anchor="middle" font-size="13" font-weight="700" fill="#2b2d42">已經有改好的待修版？</text>
+     <text x="115" y="184" text-anchor="middle" font-size="13" font-weight="700" fill="#2b2d42">點這裡直接繳費領藥</text>
+     <text x="115" y="202" text-anchor="middle" font-size="10" fill="#8d8a70">（臨時指示・請勿撕毀）</text></g>
+    <g><path d="M92 36l-6 -16q4 -10 14 -8M138 36l6 -16q-4 -10 -14 -8" fill="none" stroke="#9aa0b5" stroke-width="3" stroke-linecap="round"/>
+     <path d="M84 30h62l-6 26h-50Z" fill="#2b2d42" stroke="#111" stroke-width="2" stroke-linejoin="round"/><path d="M92 36h46" stroke="#555a73" stroke-width="3"/></g>
+   </svg></button>
    <div id="lamp"><b id="lampNo">414155039</b><span id="lampTx">請掛號</span></div>
+   <div class="glasshit" id="glass1" style="left:880px;top:150px;width:660px;height:164px" aria-hidden="true"></div><div class="gflash" id="gf1" style="left:880px;top:150px;width:660px;height:164px"></div>
    <button class="hit" id="hit1" style="left:1054px;top:226px;width:142px;height:110px" aria-label="點擊選擇 .docx 檔案（櫃檯窗口）" title="點擊選擇 .docx 檔案"></button>
    <div class="stamp" id="stamp1w" style="left:1062px;top:190px">已收件</div>
    <div id="rej1" class="reject" style="left:965px;top:350px;width:320px" hidden>本窗口只受理 .docx<small id="rej1n"></small></div>
@@ -291,6 +325,8 @@ th{background:#f3eedf}
      <label class="opt"><input type="checkbox" id="oKeep"><span>保留隱藏文字<small>預設會刪除隱藏文字</small></span></label>
      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><label class="fld">作者／最後修改者<input type="text" id="oAuthor" maxlength="100" autocomplete="off"></label>
      <label class="fld">公司<input type="text" id="oCompany" maxlength="100" autocomplete="off"></label></div>
+     <label class="fld">斧大管你學院強制認捐：<b id="oPainV">0</b> / 10<input type="range" id="oPain" min="0" max="10" step="1" value="0" oninput="$('oPainV').textContent=this.value"></label>
+     <p class="mut" style="margin:4px 0 0;font-size:14px">認捐越多，文件的「建立時間」越久以前、編輯總時間與修訂版編號越高。</p>
      <p class="mut" style="margin:4px 0 0;font-size:14px">作者、公司留空用預設值。設定會記在這個瀏覽器，下次自動帶入。</p>
      <label class="agree"><input type="checkbox" id="oAgree"><span>我已了解上述說明，同意接受手術</span></label>
      <div class="sigline">立同意書人：<span id="sigName">　　　　</span></div>
@@ -378,10 +414,11 @@ th{background:#f3eedf}
      </div>
     </div>
    </div>
+   <div class="glasshit" id="glass6" style="left:1070px;top:160px;width:490px;height:322px" aria-hidden="true"></div><div class="gflash" id="gf6" style="left:1070px;top:160px;width:490px;height:322px"></div>
    <button class="hit" id="hit6" style="left:1186px;top:404px;width:160px;height:96px" aria-label="點擊選擇修改後的待修版 .docx（收費窗口）" title="點擊選擇 .docx 檔案"></button>
    <div class="stamp" id="stamp6" style="left:1196px;top:362px">已收件</div>
    <div id="rej6" class="reject" style="left:1110px;top:520px;width:320px" hidden>本窗口只受理 .docx<small id="rej6n"></small></div>
-   <div class="bubble" style="left:1140px;top:262px;--tx:150px">請到旁邊刷卡～</div>
+   <div class="bubble" id="clerkSay6" style="left:1140px;top:262px;--tx:150px">請到旁邊刷卡～</div>
   </section>
 
   <!-- S7 領藥 -->
@@ -393,14 +430,15 @@ th{background:#f3eedf}
     <div class="row" style="margin-top:18px"><a class="btn go" id="fDl" href="#" download>領藥（下載最終乾淨版 .docx）</a></div>
     <div class="row"><button class="btn alt" id="fMore">查看詳情</button><button class="btn alt" id="again">再掛一個號</button></div>
    </div>
+   <div class="glasshit" id="glass7" style="left:870px;top:300px;width:700px;height:208px" aria-hidden="true"></div><div class="gflash" id="gf7" style="left:870px;top:300px;width:700px;height:208px"></div>
    <div class="bag" id="bag" style="left:872px;top:290px"><span class="x"></span><b>藥　袋</b><div class="bn" id="bagName">—</div><div>用法：交出前請再讀一遍</div><div style="color:#5c6378">（每日一次，飯後）</div></div>
    <div class="bubble" id="say7" style="left:600px;top:470px;--tx:110px" hidden>謝謝藥師！</div>
-   <div class="bubble" style="left:1110px;top:196px;--tx:110px">請核對姓名（檔名）</div>
+   <div class="bubble" id="clerkSay7" style="left:1110px;top:196px;--tx:110px">請核對姓名（檔名）</div>
   </section>
  </div>
  <div id="near" class="layer"></div>
 
- <header id="hud"><div class="brand">輔大醫院</div><ol id="steps"></ol></header>
+ <header id="hud"><div class="brand">斧大醫院</div><ol id="steps"></ol></header>
  <div id="cast" role="alert" hidden><b>院內廣播</b><span id="castT"></span><button id="castX">知道了</button></div>
  <footer id="fine">每個發現都只是線索（可疑度），不是判決；同一訊號在不同文體意義不同，請搭配人工判斷。</footer>
 </div>
@@ -460,12 +498,15 @@ const CAP=r=>`<path d="M${-r*.62} ${-r*.78}L${-r*.5} ${-r*1.12}H${r*.5}L${r*.62}
 const GLASSES=r=>`<circle cx="${-r*.33}" cy="${-r*.04}" r="${r*.22}" fill="rgba(255,255,255,.35)" ${sw(3)}/><circle cx="${r*.33}" cy="${-r*.04}" r="${r*.22}" fill="rgba(255,255,255,.35)" ${sw(3)}/><path d="M${-r*.11} ${-r*.04}h${r*.22}" ${sw(3)}/>`;
 const MIRROR=r=>`<path d="M${-r} ${-r*.42}Q0 ${-r*.62} ${r} ${-r*.42}" fill="none" stroke="#444" stroke-width="5"/><circle cx="0" cy="${-r*.56}" r="${r*.24}" fill="#dfe7ef" ${sw(3)}/><circle cx="0" cy="${-r*.56}" r="${r*.08}" fill="#9aa"/>`;
 
+/* 斧子：原點在握把下 1/4 處，刀刃朝上偏右 */
+const AXE=len=>`<path d="M0 ${len*.3} L0 ${-len}" stroke="${OL}" stroke-width="12" stroke-linecap="round"/><path d="M0 ${len*.3} L0 ${-len}" stroke="#a9733f" stroke-width="7" stroke-linecap="round"/><path d="M-3 ${-len+6} L34 ${-len-12} Q48 ${-len+18} 34 ${-len+48} L-3 ${-len+32} Z" fill="#cfd8e0" ${sw(3)}/><path d="M40 ${-len-6} Q50 ${-len+18} 40 ${-len+42}" fill="none" stroke="#fff" stroke-width="3" opacity=".9"/>`;
+const axeAt=(x,y,rot=0,len=100,cls='')=>`<g transform="translate(${x} ${y}) rotate(${rot})"><g${cls?` class="${cls}"`:''}>${AXE(len)}</g></g>`;
 /* 病人站姿（腳底為原點，面向右）。cont=顯示治療後的延續造型（輪椅/繃帶等，依 #stage 的 rk-* class） */
 function patient(o={}){
  const arms=o.arm==='up'?limb('M-24 -106 Q-46 -140 -40 -176',SK)+hand(-40,-180)+limb('M24 -106 Q46 -140 40 -176',SK)+hand(40,-180)
   :o.arm==='none'?limb('M-24 -106 Q-42 -84 -38 -64',SK)+hand(-38,-60)
   :limb('M-24 -106 Q-42 -84 -38 -64',SK)+hand(-38,-60)+limb('M24 -106 Q42 -84 38 -64',SK)+hand(38,-60);
- return `<g><rect x="-20" y="-52" width="13" height="46" rx="5" fill="${SK}" ${sw()}/><ellipse cx="-15" cy="-6" rx="16" ry="8" fill="#6b4f3a" ${sw()}/>
+ return `<g class="patg"><rect x="-20" y="-52" width="13" height="46" rx="5" fill="${SK}" ${sw()}/><ellipse cx="-15" cy="-6" rx="16" ry="8" fill="#6b4f3a" ${sw()}/>
  <g class="${o.cont?'leg-ok':''}"><rect x="7" y="-52" width="13" height="46" rx="5" fill="${SK}" ${sw()}/><ellipse cx="17" cy="-6" rx="16" ry="8" fill="#6b4f3a" ${sw()}/></g>
  ${o.cont?`<g class="leg-stump"><rect x="5" y="-54" width="17" height="22" rx="8" fill="#fff" ${sw()}/><path d="M8 -42h11M8 -36h11" stroke="#ccc" stroke-width="2"/><path d="M50 -118L60 -4" stroke="#8d99ae" stroke-width="7"/><path d="M42 -118h18" ${sw(6)}/><path d="M50 -118L60 -4" fill="none" ${sw(2)}/></g>`:''}
  <path d="M-36 -46L-27 -116Q0 -126 27 -116L36 -46Q0 -38 -36 -46Z" fill="${GOWN}" ${sw()}/>
@@ -476,7 +517,7 @@ function lying(o={}){
  const legN=o.stump?`<rect x="44" y="-26" width="36" height="17" rx="8" fill="#fff" ${sw()}/><path d="M80 -26l12 -8M80 -10l12 8" stroke="#fff" stroke-width="5"/><path d="M80 -26l12 -8M80 -10l12 8" fill="none" ${sw(2)}/>`
   :o.noLeg?`<rect x="44" y="-26" width="18" height="17" rx="8" fill="#fff" ${sw()}/>`
   :`<rect x="44" y="-26" width="104" height="17" rx="8" fill="${SK}" ${sw()}/><ellipse cx="152" cy="-30" rx="9" ry="17" fill="#6b4f3a" ${sw()}/>`;
- return `<g><ellipse cx="-150" cy="-12" rx="50" ry="18" fill="#fff" ${sw()}/>
+ return `<g class="patg"><ellipse cx="-150" cy="-12" rx="50" ry="18" fill="#fff" ${sw()}/>
  <rect x="44" y="-46" width="98" height="17" rx="8" fill="${SK}" ${sw()}/><ellipse cx="146" cy="-50" rx="9" ry="17" fill="#6b4f3a" ${sw()}/>
  ${o.prone?`<path d="M-20 -50Q10 -88 48 -52" fill="${GOWN}" ${sw()}/>`:''}
  <rect x="-114" y="-56" width="168" height="56" rx="26" fill="${GOWN}" ${sw()}/>
@@ -495,7 +536,7 @@ function sitting(o={}){
 function chairPatient(o={}){
  const c=o.cont,hb=c?`<g class="hd-band"><path d="M-40 -14Q0 -36 40 -14" fill="none" stroke="#fff" stroke-width="11"/><path d="M-40 -14Q0 -36 40 -14" fill="none" ${sw(2)}/><path d="M22 -30l14 -12M22 -30l16 0" stroke="#fff" stroke-width="6"/></g>`:'';
  const arm=o.arm==='none'?'':o.arm==='up'?limb('M34 -160Q74 -190 68 -230',SK)+hand(68,-234):limb('M34 -160Q56 -130 60 -110',SK)+hand(60,-106);
- return `<g><circle cx="0" cy="-58" r="58" fill="none" ${sw(9)}/><circle cx="0" cy="-58" r="50" fill="none" stroke="#8d99ae" stroke-width="4"/><path d="M-50 -58h100M0 -108v100M-35 -93l70 70M35 -93l-70 70" stroke="#8d99ae" stroke-width="3"/>
+ return `<g class="patg"><circle cx="0" cy="-58" r="58" fill="none" ${sw(9)}/><circle cx="0" cy="-58" r="50" fill="none" stroke="#8d99ae" stroke-width="4"/><path d="M-50 -58h100M0 -108v100M-35 -93l70 70M35 -93l-70 70" stroke="#8d99ae" stroke-width="3"/>
   <circle cx="96" cy="-14" r="14" fill="#fff" ${sw()}/><path d="M-34 -176L-22 -84H84L96 -16" fill="none" stroke="#8d99ae" stroke-width="9"/><path d="M-34 -176h-34" ${sw(9)}/>
   <rect x="-30" y="-98" width="112" height="16" rx="4" fill="#3d405b" ${sw()}/><rect x="-40" y="-178" width="16" height="96" rx="4" fill="#3d405b" ${sw()}/>
   <g class="${c?'leg-ok2':''}"><path d="M20 -92h60" stroke="${OL}" stroke-width="25"/><path d="M20 -92h60" stroke="${SK}" stroke-width="17"/><path d="M80 -92L84 -34" stroke="${OL}" stroke-width="25"/><path d="M80 -92L84 -34" stroke="${SK}" stroke-width="17"/><ellipse cx="96" cy="-26" rx="18" ry="8" fill="#6b4f3a" ${sw()}/></g>
@@ -509,13 +550,14 @@ const RN=(pose,mood,flip)=>nurse(pose,mood,{name:'徐',flip});
 /* 醫師（腳底原點，面向右）pose: point|cpr|scissors|relax|cross */
 function doctor(pose='stand',mood='smile'){
  const c='#fff';let arms;
- if(pose==='point')arms=limb('M-42 -255Q-62 -200 -56 -160',c,16)+hand(-56,-154)+limb('M40 -255L140 -268',c,16)+hand(146,-269)+`<path d="M152 -270h20" ${sw(7)}/><path d="M152 -270h18" stroke="${SK}" stroke-width="4"/>`;
+ if(pose==='point')arms=limb('M-42 -255Q-62 -200 -56 -160',c,16)+hand(-56,-154)+axeAt(-56,-150,-14,95)+limb('M40 -255L140 -268',c,16)+hand(146,-269)+`<path d="M152 -270h20" ${sw(7)}/><path d="M152 -270h18" stroke="${SK}" stroke-width="4"/>`;
  else if(pose==='cpr')arms=`<g class="cpr">`+limb('M-40 -255Q-20 -215 -4 -186',c,16)+limb('M40 -255Q24 -215 8 -186',c,16)+hand(2,-182)+hand(10,-180)+'</g>';
- else if(pose==='scissors')arms=limb('M-42 -255Q-62 -200 -56 -160',c,16)+hand(-56,-154)+limb('M40 -255Q80 -220 96 -196',c,16)+`<g transform="translate(100 -196) rotate(28)"><g class="pulse"><ellipse cx="-20" cy="-10" rx="16" ry="12" fill="#ff8c42" ${sw()}/><ellipse cx="-20" cy="14" rx="16" ry="12" fill="#ff8c42" ${sw()}/><path d="M-6 -6L90 14M-6 10L90 -10" stroke="#cfd6e4" stroke-width="12"/><path d="M-6 -6L90 14M-6 10L90 -10" fill="none" ${sw(2)}/></g></g>`+hand(98,-196);
- else if(pose==='relax')arms=limb('M-42 -255Q-62 -200 -56 -160',c,16)+hand(-56,-154)+limb('M40 -255Q92 -300 40 -334',c,16)+hand(36,-338)+`<path d="M66 -360q6 12 0 18q-6 -6 0 -18Z" fill="#7cc6ff" ${sw(2)}/>`;
+ else if(pose==='scissors')arms=limb('M-42 -255Q-62 -200 -56 -160',c,16)+hand(-56,-154)+limb('M40 -255Q80 -220 96 -196',c,16)+`<g transform="translate(100 -196) rotate(40)"><g class="pulse">${AXE(110)}</g></g>`+hand(98,-196);
+ else if(pose==='relax')arms=limb('M-42 -255Q-62 -200 -56 -160',c,16)+hand(-56,-154)+axeAt(-56,-150,-14,95)+limb('M40 -255Q92 -300 40 -334',c,16)+hand(36,-338)+`<path d="M66 -360q6 12 0 18q-6 -6 0 -18Z" fill="#7cc6ff" ${sw(2)}/>`;
  else if(pose==='cross')arms=limb('M-40 -250Q-20 -200 34 -206',c,16)+limb('M40 -250Q20 -190 -34 -200',c,16)+hand(-36,-200)+hand(36,-206);
- else arms=limb('M-42 -255Q-62 -200 -56 -160',c,16)+hand(-56,-154)+limb('M42 -255Q62 -200 56 -160',c,16)+hand(56,-154);
- return `<g><rect x="-28" y="-128" width="22" height="120" fill="#3d405b" ${sw()}/><rect x="6" y="-128" width="22" height="120" fill="#3d405b" ${sw()}/>
+ else arms=limb('M-42 -255Q-62 -200 -56 -160',c,16)+hand(-56,-154)+axeAt(-56,-150,-14,95)+limb('M42 -255Q62 -200 56 -160',c,16)+hand(56,-154);
+ const back=(pose==='cpr'||pose==='cross')?axeAt(-30,-210,-38,120):'';
+ return `<g>${back}<rect x="-28" y="-128" width="22" height="120" fill="#3d405b" ${sw()}/><rect x="6" y="-128" width="22" height="120" fill="#3d405b" ${sw()}/>
  <ellipse cx="-16" cy="-8" rx="22" ry="10" fill="#222" ${sw()}/><ellipse cx="22" cy="-8" rx="22" ry="10" fill="#222" ${sw()}/>
  <rect x="-11" y="-292" width="22" height="22" fill="${SK}" ${sw()}/>
  <path d="M-58 -112L-48 -264Q0 -284 48 -264L58 -112Z" fill="#fff" ${sw()}/>
@@ -527,14 +569,15 @@ function doctor(pose='stand',mood='smile'){
 function nurse(pose='stand',mood='smile',o={}){
  const top=o.top||'#5ec2b7',pants=o.pants||'#3aa597',sk=o.skin||'#e9b48a';let arms='';
  const A=(d,hx,hy)=>limb(d,top,14)+hand(hx,hy,sk);
- if(pose==='note')arms=A('M-38 -200Q-58 -150 -48 -120',-48,-116)+A('M38 -200Q50 -160 30 -150',28,-150)+`<rect x="22" y="-196" width="44" height="56" rx="4" fill="#fff" ${sw(3)}/><path d="M30 -180h28M30 -170h28M30 -160h18" stroke="#999" stroke-width="3"/>`;
- else if(pose==='paddles')arms=`<g class="paddles">`+A('M-36 -200Q10 -180 96 -196',96,-196)+A('M38 -200Q80 -188 118 -184',118,-184)+`<rect x="86" y="-222" width="26" height="40" rx="6" fill="#ffd23f" ${sw()}/><rect x="110" y="-208" width="26" height="40" rx="6" fill="#ffd23f" ${sw()}/></g>`;
- else if(pose==='syringe')arms=A('M-36 -200Q-20 -250 40 -282',40,-282)+`<g transform="translate(60 -282) rotate(6)"><rect x="0" y="-16" width="104" height="32" rx="8" fill="#dff3ff" ${sw()}/><rect x="46" y="-12" width="54" height="24" rx="5" fill="#9be7a8"/><rect x="0" y="-16" width="104" height="32" rx="8" fill="none" ${sw()}/><path d="M104 0h46" ${sw(5)}/><path d="M-30 0h30M-30 -20v40" ${sw(8)}/><path d="M24 -16v10M48 -16v10M72 -16v10" ${sw(2)}/></g>`+A('M38 -200Q70 -230 90 -270',90,-272);
+ if(pose==='note')arms=A('M-38 -200Q-58 -150 -48 -120',-48,-116)+axeAt(-48,-112,-14,90)+A('M38 -200Q50 -160 30 -150',28,-150)+`<rect x="22" y="-196" width="44" height="56" rx="4" fill="#fff" ${sw(3)}/><path d="M30 -180h28M30 -170h28M30 -160h18" stroke="#999" stroke-width="3"/>`;
+ else if(pose==='paddles')arms=`<g class="paddles">`+A('M-36 -200Q10 -180 96 -196',96,-196)+A('M38 -200Q80 -188 118 -184',118,-184)+axeAt(96,-192,-8,80)+axeAt(118,-180,12,80)+`</g>`;
+ else if(pose==='syringe')arms=A('M-36 -200Q-20 -250 40 -282',40,-282)+`<g transform="translate(52 -282) rotate(86)">${AXE(110)}</g>`+A('M38 -200Q70 -230 90 -270',90,-272);
  else if(pose==='push')arms=A('M-34 -200Q10 -170 60 -172',60,-172)+A('M38 -200Q60 -180 70 -168',70,-168);
- else if(pose==='run')arms=A('M-36 -200Q-70 -190 -84 -220',-86,-224)+A('M38 -200Q76 -186 92 -150',94,-146);
- else if(pose==='give')arms=A('M-38 -200Q-58 -150 -48 -120',-48,-116);
- else arms=A('M-38 -200Q-58 -150 -48 -120',-48,-116)+A('M38 -200Q58 -150 48 -120',48,-116);
- return `<g><rect x="-22" y="-102" width="18" height="96" fill="${pants}" ${sw()}/><rect x="4" y="-102" width="18" height="96" fill="${pants}" ${sw()}/>
+ else if(pose==='run')arms=A('M-36 -200Q-70 -190 -84 -220',-86,-224)+axeAt(-86,-220,18,120,'axeraise')+A('M38 -200Q76 -186 92 -150',94,-146);
+ else if(pose==='give')arms=A('M-38 -200Q-58 -150 -48 -120',-48,-116)+axeAt(-48,-112,-14,90);
+ else arms=A('M-38 -200Q-58 -150 -48 -120',-48,-116)+axeAt(-48,-112,-14,90)+A('M38 -200Q58 -150 48 -120',48,-116);
+ const back=(pose==='push'||pose==='paddles'&&false)?axeAt(-26,-170,-38,110):'';
+ return `<g>${back}<rect x="-22" y="-102" width="18" height="96" fill="${pants}" ${sw()}/><rect x="4" y="-102" width="18" height="96" fill="${pants}" ${sw()}/>
  <ellipse cx="-14" cy="-7" rx="18" ry="9" fill="#fff" ${sw()}/><ellipse cx="18" cy="-7" rx="18" ry="9" fill="#fff" ${sw()}/>
  <rect x="-9" y="-232" width="18" height="18" fill="${sk}" ${sw()}/>
  <path d="M-46 -96L-40 -218Q0 -234 40 -218L46 -96Z" fill="${top}" ${sw()}/><path d="M-14 -224L0 -200L14 -224" fill="none" ${sw(3)}/>
@@ -559,17 +602,17 @@ const armRig=n=>`<g id="arm${n}"><path fill="none" stroke="${OL}" stroke-width="
 /* ============ 各場景背景 ============ */
 function bg1(){return svg(room('#d6efe4','#a8d5c2')+`
  <g transform="translate(600 104)"><rect width="230" height="96" rx="12" fill="#2b2d42"/><rect x="6" y="6" width="218" height="84" rx="8" fill="#111"/></g>
- <!-- 職員（玻璃後） --><g transform="translate(1340 512)">${nurse('stand','sleepy',{top:'#8e7dbe',cap:false,hair:HAIR.short,skin:'#f1c27d',extra:GLASSES(42)})}</g>
+ <!-- 職員（玻璃後） --><g transform="translate(1340 512)"><g class="clerkG"><g class="cSleepy">${nurse('stand','sleepy',{top:'#8e7dbe',cap:false,hair:HAIR.short,skin:'#f1c27d',extra:GLASSES(42)})}</g><g class="cAngry">${nurse('run','grit',{top:'#8e7dbe',cap:false,hair:HAIR.short,skin:'#f1c27d',extra:GLASSES(42)})}</g></g></g>
  <rect x="1250" y="270" width="40" height="44" rx="6" fill="#fff" ${sw()}/><path d="M1290 280q16 4 0 22" fill="none" ${sw()}/><path d="M1260 260q6 -14 0 -24M1276 260q6 -14 0 -24" stroke="#aaa" stroke-width="3" fill="none"/>
  <rect x="880" y="150" width="660" height="164" fill="#bfe6f2" opacity=".42"/><rect x="880" y="150" width="660" height="164" fill="none" stroke="#7d8d90" stroke-width="10"/><path d="M1210 150v164" stroke="#7d8d90" stroke-width="8"/>
  <path d="M920 170l60 60M940 170l30 30M1240 170l60 60" stroke="#fff" stroke-width="5" opacity=".6"/>
  ${sign(892,166,148,62,'午休|12:00–13:30',17,'#fff8c4')}${sign(1398,240,130,56,'請勿敲打玻璃|（會醒）',15,'#ffe0e0')}
- ${sign(960,84,500,56,'輔大醫院　掛號櫃檯 REGISTRATION',26,'#2a9d8f','#fff')}
+ ${sign(960,84,500,56,'斧大醫院　掛號櫃檯 REGISTRATION',26,'#2a9d8f','#fff')}
  <g id="win1"><g class="open"><rect class="glow" x="1066" y="234" width="118" height="92" rx="20" fill="#ffd23f" opacity="0"/><path d="M1080 314V262Q1080 246 1096 246H1154Q1170 246 1170 262V314Z" fill="#41506b" ${sw()}/><path d="M1088 314V266Q1088 254 1100 254H1150Q1162 254 1162 266V314" fill="none" stroke="#8aa" stroke-width="3"/><text x="1125" y="290" text-anchor="middle" font-size="14" font-weight="800" fill="#ffd23f">收件</text></g></g>
  <rect x="845" y="312" width="730" height="26" rx="6" fill="#8c5a3c" ${sw()}/>
  <rect x="860" y="338" width="700" height="444" fill="#c98b5a" ${sw()}/>
  <path d="M880 360h660v400h-660Z" fill="none" stroke="#a46d43" stroke-width="5"/><path d="M1100 360v400M1320 360v400" stroke="#a46d43" stroke-width="5"/>
- ${sign(900,520,190,90,'身高未達窗口者|請自行努力',18,'#fff')}${sign(1350,520,170,90,'掛號費|誠意即可',18,'#fff8c4',3)}
+ ${sign(900,520,190,90,'身高未達窗口者|請自行努力',18,'#fff')}
  <g transform="translate(686 782)">${patient({arm:'none',mood:'o'})}</g>
  ${armRig(1)}`)}
 function bg2(){return svg(room('#e3e4f6','#c3c6ea')+`
@@ -661,11 +704,11 @@ function bg5(){return svg(room('#f7f1d0','#e6d58f',[[70,110,290,240]])+`
   <circle id="pled" cx="900" cy="520" r="12" fill="#999" ${sw(3)}/><rect x="760" y="580" width="180" height="40" rx="8" fill="#cfd4e6" ${sw(3)}/><text x="850" y="607" text-anchor="middle" font-size="18" font-weight="800" fill="${OL}">處方專用機</text></g>
  <g transform="translate(330 782)">${RN('stand','smile')}</g>`)}
 function bg6(){return svg(room('#fbe3d4','#f2b89a')+`
- ${sign(1050,84,500,60,'輔大醫院　收費處 CASHIER',26,'#e76f51','#fff')}
- <g transform="translate(1430 640)">${nurse('stand','smile',{top:'#f4a261',pants:'#e76f51',cap:false,hair:HAIR.short,skin:'#c68642',extra:`<path d="M-44 -30Q0 -56 44 -30L60 -24H-60Z" fill="#2a9d8f" ${sw(3)}/>`})}</g>
+ ${sign(1050,84,500,60,'斧大醫院　收費處 CASHIER',26,'#e76f51','#fff')}
+ <g transform="translate(1430 640)"><g class="clerkG"><g class="cSleepy">${nurse('stand','smile',{top:'#f4a261',pants:'#e76f51',cap:false,hair:HAIR.short,skin:'#c68642',extra:`<path d="M-44 -30Q0 -56 44 -30L60 -24H-60Z" fill="#2a9d8f" ${sw(3)}/>`})}</g><g class="cAngry">${nurse('run','grit',{top:'#f4a261',pants:'#e76f51',cap:false,hair:HAIR.short,skin:'#c68642',extra:`<path d="M-44 -30Q0 -56 44 -30L60 -24H-60Z" fill="#2a9d8f" ${sw(3)}/>`})}</g></g></g>
  <rect x="1070" y="160" width="490" height="322" fill="#cdeaf2" opacity=".45"/><rect x="1070" y="160" width="490" height="322" fill="none" stroke="#a7b4bb" stroke-width="12"/><path d="M1315 160v322" stroke="#a7b4bb" stroke-width="8"/>
  <g fill="#7d8d90">${[0,1,2].map(i=>[0,1,2].map(j=>`<circle cx="${1170+i*16}" cy="${300+j*16}" r="4"/>`).join('')).join('')}</g>
- ${sign(1092,180,190,64,'本院接受：信用卡|悠遊卡、誠意',16,'#fff8c4')}${sign(1344,180,190,64,'找零請當面點清|離櫃恕不負責',16,'#fff')}
+ ${sign(1092,180,190,64,'提醒：病人請按時繳交|期中期末認捐!!!',15,'#ffe0e0')}${sign(1344,180,190,64,'找零請當面點清|離櫃恕不負責',16,'#fff')}
  <g id="win6"><g class="open"><rect class="glow" x="1186" y="414" width="160" height="80" rx="20" fill="#ffd23f" opacity="0"/><path d="M1206 482V448Q1206 432 1222 432H1310Q1326 432 1326 448V482Z" fill="#5a6b80" ${sw()}/><text x="1266" y="466" text-anchor="middle" font-size="15" font-weight="800" fill="#ffd23f">投幣盤</text></g></g>
  <rect x="1050" y="478" width="530" height="24" rx="6" fill="#b5654a" ${sw()}/><ellipse cx="1266" cy="490" rx="74" ry="9" fill="#7a3e2c"/>
  <rect x="1060" y="502" width="510" height="280" fill="#f4d6c4" ${sw()}/><path d="M1060 560h510M1060 700h510" stroke="#e5b49a" stroke-width="8"/>
@@ -677,10 +720,11 @@ function bg7(){
  let shelves='';const cols=['#e76f51','#2a9d8f','#e9c46a','#8ecae6','#f4a261','#b5838d','#90be6d'];
  for(let r=0;r<3;r++){shelves+=`<rect x="900" y="${150+r*110}" width="640" height="12" fill="#8c5a3c" ${sw(3)}/>`;for(let i=0;i<11;i++){const c=cols[(i*3+r*2)%7],x=916+i*56,h=40+((i*7+r*5)%4)*12;shelves+=i%2?`<rect x="${x}" y="${150+r*110-h}" width="38" height="${h}" rx="6" fill="${c}" ${sw(3)}/><rect x="${x+8}" y="${150+r*110-h-12}" width="22" height="14" rx="3" fill="#fff" ${sw(3)}/>`:`<rect x="${x}" y="${150+r*110-h}" width="44" height="${h}" rx="3" fill="${c}" ${sw(3)}/><rect x="${x+6}" y="${150+r*110-h+10}" width="32" height="14" fill="#fff"/>`}}
  return svg(room('#e2f4dc','#b8dfa9')+shelves+`
-  <g transform="translate(1250 650) scale(-1 1)">${nurse('give','smile',{top:'#fff',pants:'#3d405b',apron:'#90be6d',cap:false,hair:HAIR.short,skin:'#e0ac69',extra:GLASSES(42)})}</g>
+  <g transform="translate(1250 650) scale(-1 1)"><g class="clerkG"><g class="cSleepy">${nurse('give','smile',{top:'#fff',pants:'#3d405b',apron:'#90be6d',cap:false,hair:HAIR.short,skin:'#e0ac69',extra:GLASSES(42)})}</g><g class="cAngry">${nurse('run','grit',{top:'#fff',pants:'#3d405b',apron:'#90be6d',cap:false,hair:HAIR.short,skin:'#e0ac69',extra:GLASSES(42)})}</g></g></g>
  <g class="phArm"><g transform="translate(0 0)">${limb('M1090 470H1214','#fff',14)}${hand(1086,470,'#e0ac69')}</g></g>
+ <rect x="870" y="300" width="700" height="208" fill="#cdeaf2" opacity=".35"/><rect x="870" y="300" width="700" height="208" fill="none" stroke="#a7b4bb" stroke-width="10"/><path d="M900 330l50 50M920 330l24 24" stroke="#fff" stroke-width="5" opacity=".6"/>
  <rect x="850" y="508" width="730" height="26" rx="6" fill="#5c8a4a" ${sw()}/><rect x="860" y="534" width="710" height="248" fill="#f6fbf2" ${sw()}/><path d="M860 600h710" stroke="#d5e8c9" stroke-width="10"/>
- ${sign(1050,556,500,60,'輔大醫院　領藥處 PHARMACY',26,'#2a9d8f','#fff')}${sign(1300,660,230,80,'藥袋請勿折疊|請勿與論文混用',17,'#fff')}
+ ${sign(1050,556,500,60,'斧大醫院　領藥處 PHARMACY',26,'#2a9d8f','#fff')}${sign(1300,660,230,80,'藥袋請勿折疊|請勿與論文混用',17,'#fff')}
  <g transform="translate(720 782)">${chairPatient({arm:'up',mood:'joy',cont:true})}</g>`)}
 
 /* ============ 遠景（視差 0.35x）與近景（1.25x） ============ */
@@ -812,12 +856,12 @@ $('ctNext').onclick=()=>{if(S.step===2)go(3)};
 /* ============ S3 手術同意書 ============ */
 const PREF_KEY='wmr.prefs.v1';
 function loadPrefs(){try{return JSON.parse(localStorage.getItem(PREF_KEY)||'{}')||{}}catch(e){return{}}}
-function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify({style:S.style,keep:S.keep,author:S.author,company:S.company}))}catch(e){}}
-function applyPrefs(def){const P=loadPrefs();$('oStyle').checked=!!P.style;$('oKeep').checked=!!P.keep;$('oAuthor').value=P.author||def?.author||'';$('oCompany').value=P.company||def?.company||'';$('oAgree').checked=false;$('order').disabled=true}
+function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify({style:S.style,keep:S.keep,author:S.author,company:S.company,pain:S.pain}))}catch(e){}}
+function applyPrefs(def){const P=loadPrefs();$('oStyle').checked=!!P.style;$('oKeep').checked=!!P.keep;$('oAuthor').value=P.author||def?.author||'';$('oCompany').value=P.company||def?.company||'';$('oPain').value=P.pain??0;$('oPainV').textContent=$('oPain').value;$('oAgree').checked=false;$('order').disabled=true}
 function enter3(){$('sigName').textContent=(S.info&&S.info.name?S.info.name.replace(/\.docx$/i,''):'')||'　　　　';$('order').disabled=!$('oAgree').checked}
 $('oAgree').onchange=()=>{if(S.step===3)$('order').disabled=!$('oAgree').checked};
-$('order').onclick=()=>{if(S.step!==3||!$('oAgree').checked)return;S.style=$('oStyle').checked;S.keep=$('oKeep').checked;S.author=$('oAuthor').value.trim();S.company=$('oCompany').value.trim();savePrefs();$('order').disabled=true;go(4)};
-const qs=()=>`id=${enc(S.jid||'')}&style=${S.style?1:0}&keep_hidden=${S.keep?1:0}&author=${enc(S.author)}&company=${enc(S.company)}`;
+$('order').onclick=()=>{if(S.step!==3||!$('oAgree').checked)return;S.style=$('oStyle').checked;S.keep=$('oKeep').checked;S.author=$('oAuthor').value.trim();S.company=$('oCompany').value.trim();S.pain=$('oPain').value;savePrefs();$('order').disabled=true;go(4)};
+const qs=()=>`id=${enc(S.jid||'')}&style=${S.style?1:0}&keep_hidden=${S.keep?1:0}&author=${enc(S.author)}&company=${enc(S.company)}&pain=${enc(S.pain??'')}`;
 
 /* ============ S4 治療 ============ */
 function reset4(){const sc=$('sc4');sc.dataset.st='idle';sc.classList.remove('paused');showSet('sc4',S.risk+'-idle');$('opLamp').className='oplamp';$('opLamp').textContent='治療中';$('chartSt').textContent='準備治療…';$('chartSt').className='mut';
@@ -870,7 +914,28 @@ function render6(){$('s6Need').hidden=S.skip;$('s6Skip').hidden=!S.skip;$('hit6'
  else if(S.file6)posState('ready','應付 NT$ 0','（全民健保）請按「確認」');
  else posState('sleep','請先提交待修版','確認鍵暫停服務')}
 function enter6(){reset6();$('s6Pref').hidden=!S.direct;$('toSkip').hidden=!!S.direct;
- if(S.direct){const P=loadPrefs();$('pStyle').checked=!!P.style;$('pKeep').checked=!!P.keep;$('pAuthor').value=P.author||'';$('pCompany').value=P.company||''}}
+ if(S.direct){const P=loadPrefs();$('pStyle').checked=!!P.style;$('pKeep').checked=!!P.keep;$('pAuthor').value=P.author||'';$('pCompany').value=P.company||'';S.pain=P.pain}}
+/* 敲玻璃：驚醒職員 */
+const KN={1:{say:'clerkSay',pos:'left:1010px;top:340px'},6:{say:'clerkSay6',pos:'left:1050px;top:520px'},7:{say:'clerkSay7',pos:'left:930px;top:560px'}};
+let fat=0;
+function setFat(n){fat=n;const st=$('stage');st.style.setProperty('--fx',1+.2*n);st.style.setProperty('--fy',1+.06*n)}
+for(const n in KN){const k=KN[n];k.scolds=0;k.t=null;k.said=null;
+ const d=document.createElement('div');d.className='transfer';d.hidden=true;d.setAttribute('role','dialog');d.setAttribute('aria-label','轉院通知');d.style.cssText=k.pos;
+ d.innerHTML='<h3>轉院通知書</h3><p>病人因屢勸不聽、反覆敲打玻璃，茲將其轉診至：</p><p style="font-size:22px;text-align:center;color:#2a5d8f">萬能科技大醫院</p><p style="font-size:14px;color:#6b6b80">備註：實際上不會轉院，只是這番折騰讓你胖了一圈。</p><div class="tstamp">已轉院</div><button type="button">收下（含脂肪）</button>';
+ $('sc'+n).appendChild(d);k.note=d;
+ d.querySelector('button').onclick=()=>{d.hidden=true;$(k.say).textContent=k.def};
+ k.def=$(k.say).textContent;
+ $('glass'+n).addEventListener('pointerdown',()=>wakeClerk(+n))}
+function wakeClerk(n){const k=KN[n],sc=$('sc'+n),say=$(k.say);
+ if(S.step!==n)return;
+ if(!sc.classList.contains('awake')){
+  if(k.scolds>=2){k.scolds=0;transferOut(n);return}
+  k.scolds++;k.said=say.textContent;sc.classList.add('awake');say.classList.add('angry');say.textContent='延畢確定!!!'}
+ const f=$('gf'+n);f.classList.remove('on');void f.offsetWidth;f.classList.add('on');
+ clearTimeout(k.t);k.t=setTimeout(()=>{sc.classList.remove('awake');say.classList.remove('angry');if(say.textContent==='延畢確定!!!')say.textContent=k.said||k.def},2400)}
+function transferOut(n){const k=KN[n],say=$(k.say);clearTimeout(k.t);$('sc'+n).classList.remove('awake');say.classList.remove('angry');say.textContent='蓋章！轉院！';
+ setFat(Math.min(fat+1,3));k.note.hidden=false}
+function resetKnock(){setFat(0);for(const n in KN){const k=KN[n];clearTimeout(k.t);k.scolds=0;k.note.hidden=true;$('sc'+n).classList.remove('awake');$(k.say).classList.remove('angry');$(k.say).textContent=k.def}}
 $('directPay').onclick=()=>{if(S.step!==1||S.busy)return;TOKEN++;fresh();S.direct=true;S.info={name:'',defaults:{}};S.risk='low';
  $('stage').classList.remove('rk-high','rk-medium','rk-low');$('stage').classList.add('rk-low');S.skip=false;go(6)};
 function submit6(f){S.file6=f;if(S.direct)S.info.name=f.name.replace(/_待修版(?=\.docx$)/i,'');const g=$('s6Got');g.textContent='已收件：'+f.name;g.hidden=false;$('stamp6').classList.add('show');render6();const p=$('pos');p.classList.remove('pop');void p.offsetWidth;p.classList.add('pop')}
@@ -908,7 +973,7 @@ async function enter7(){
 $('fMore').onclick=()=>cleanDetails(S.fin||{},'最終版詳情');
 $('again').onclick=()=>{TOKEN++;fresh();follow=null;cast('');if($('dlg').open)$('dlg').close();
  $('stage').classList.remove('rk-high','rk-medium','rk-low');
- reset1();reset2();reset4();reset5();reset6();reset7();applyPrefs(null);$('s6Pref').hidden=true;
+ reset1();reset2();reset4();reset5();reset6();reset7();resetKnock();applyPrefs(null);$('s6Pref').hidden=true;
  hud(1);cam(1)};
 
 /* ============ 初始化 ============ */

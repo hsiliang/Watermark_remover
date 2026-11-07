@@ -100,7 +100,15 @@ def _cats(rv) -> list:
     return out
 
 
-def do_clean(jid: str, style: bool, keep_hidden: bool, author: str = "", company: str = "") -> dict:
+def _pain(q):
+    v = q.get("pain", [""])[0]
+    try:
+        return float(v) if v != "" else None
+    except ValueError:
+        raise ValueError("認捐額度不合法")
+
+
+def do_clean(jid: str, style: bool, keep_hidden: bool, author: str = "", company: str = "", pain=None) -> dict:
     author, company = clean_identity(author, company)
     d = _dir(jid)
     src = os.path.join(d, "in.docx")
@@ -108,7 +116,7 @@ def do_clean(jid: str, style: bool, keep_hidden: bool, author: str = "", company
         raise FileNotFoundError("找不到上傳的檔案")
     out = os.path.join(d, "clean.docx")
     rep = rb.rebuild(src, out, drop_hidden=not keep_hidden, style=style, author=author, company=company)
-    finalize.finalize_props(out, author, company)
+    finalize.finalize_props(out, author, company, pain)
     after = sc.scan(out, style=style, author=author, company=company)
     diffs = vf.compare(src, out)
     log = {}
@@ -132,7 +140,7 @@ def do_review(jid: str, min_conf: str = "中") -> dict:
 
 
 def do_final(jid: str, edited: bytes, style: bool, keep_hidden: bool, author: str = "", company: str = "",
-             name: str = "") -> dict:
+             name: str = "", pain=None) -> dict:
     """最終乾淨版：以（人工修改後的）待修版重建，註解整批移除；沒上傳則直接以 clean.docx 重建。
 
     有上傳修改版時不依賴先前的工作資料夾：編號空白或已過期，就建立新的資料夾（關掉網頁後也能從這一步接續）。"""
@@ -163,7 +171,7 @@ def do_final(jid: str, edited: bytes, style: bool, keep_hidden: bool, author: st
                           if c.get("{%s}author" % NS_W) == TOOL_COMMENT_AUTHOR)
     out = os.path.join(d, "final.docx")
     rep = rb.rebuild(src, out, drop_hidden=not keep_hidden, style=style, author=author, company=company)
-    finalize.finalize_props(out, author, company)
+    finalize.finalize_props(out, author, company, pain)
     after = sc.scan(out, style=style, author=author, company=company)
     rv = suspect.analyze(out, SKIP)
     ctx = rep.get("style_ctx")
@@ -180,7 +188,7 @@ def _token() -> str:
 LOGIN_PAGE = ("<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>登入</title>"
               "<body style='font:16px -apple-system,sans-serif;background:#2b2d42;color:#fff;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0'>"
               "<form method=post action=/login style='background:#fff;color:#222;padding:28px;border-radius:12px;width:280px'>"
-              "<h2 style='margin:0 0 12px'>輔大醫院・掛號前驗證</h2>%s<input type=password name=password autofocus placeholder='密碼' "
+              "<h2 style='margin:0 0 12px'>斧大醫院・掛號前驗證</h2>%s<input type=password name=password autofocus placeholder='密碼' "
               "style='width:100%%;padding:8px;box-sizing:border-box;margin:8px 0'><button style='width:100%%;padding:8px'>進入</button></form>")
 
 
@@ -288,7 +296,7 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/api/clean":
                 flag = lambda k: q.get(k, ["0"])[0] == "1"
                 return self._json(do_clean(q.get("id", [""])[0], flag("style"), flag("keep_hidden"),
-                                           q.get("author", [""])[0], q.get("company", [""])[0]))
+                                           q.get("author", [""])[0], q.get("company", [""])[0], pain=_pain(q)))
             if u.path == "/api/review":
                 return self._json(do_review(q.get("id", [""])[0], q.get("min_conf", ["中"])[0]))
             if u.path == "/api/final":
@@ -296,7 +304,7 @@ class Handler(BaseHTTPRequestHandler):
                 if body and body[:2] != b"PK":
                     return self._json({"error": "這不是 .docx 檔（不是 zip 格式）"}, 400)
                 return self._json(do_final(q.get("id", [""])[0], body, flag("style"), flag("keep_hidden"),
-                                           q.get("author", [""])[0], q.get("company", [""])[0], q.get("name", [""])[0]))
+                                           q.get("author", [""])[0], q.get("company", [""])[0], q.get("name", [""])[0], _pain(q)))
         except SAFE_ERRORS as e:
             msg = str(e)
             if isinstance(e, FileNotFoundError) and TTL_SECONDS:

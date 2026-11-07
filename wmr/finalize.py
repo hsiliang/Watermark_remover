@@ -6,6 +6,7 @@ import zipfile
 
 from lxml import etree
 
+from .painmeta import pain_to_props
 from .common import AUTHOR, COMPANY, NS_CP, NS_DC, NS_DCTERMS, NS_EP
 from .rebuild import DECL, _ser
 
@@ -17,10 +18,13 @@ def _set(root, tag, text):
     e.text = text
 
 
-def finalize_props(path: str, author: str = AUTHOR, company: str = COMPANY) -> None:
+def finalize_props(path: str, author: str = AUTHOR, company: str = COMPANY, pain: float | None = None) -> None:
     with zipfile.ZipFile(path) as z:
         items = [(i, z.read(i.filename)) for i in z.infolist()]
-    now = _dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    now_dt = _dt.datetime.utcnow().replace(microsecond=0)
+    now = now_dt.isoformat() + "Z"
+    pm = pain_to_props(pain) if pain is not None else None
+    created = (now_dt - _dt.timedelta(minutes=pm["a"])).isoformat() + "Z" if pm else None
     out = []
     for info, data in items:
         if info.filename == "docProps/core.xml":
@@ -30,10 +34,20 @@ def finalize_props(path: str, author: str = AUTHOR, company: str = COMPANY) -> N
             for t in ("title", "subject", "description"):
                 _set(r, "{%s}%s" % (NS_DC, t), "")
             _set(r, "{%s}keywords" % NS_CP, "")
+            if pm:
+                _set(r, "{%s}revision" % NS_CP, str(pm["revision"]))
+                for tag, val in (("created", created), ("modified", now)):
+                    e = r.find("{%s}%s" % (NS_DCTERMS, tag))
+                    if e is None:
+                        e = etree.SubElement(r, "{%s}%s" % (NS_DCTERMS, tag))
+                    e.set("{http://www.w3.org/2001/XMLSchema-instance}type", "dcterms:W3CDTF")
+                    e.text = val
             data = _ser(r)
         elif info.filename == "docProps/app.xml":
             r = etree.fromstring(data)
             _set(r, "{%s}Company" % NS_EP, company)
+            if pm:
+                _set(r, "{%s}TotalTime" % NS_EP, str(pm["h"]))
             data = _ser(r)
         out.append((info.filename, data))
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zo:

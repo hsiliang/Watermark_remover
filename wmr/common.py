@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import re
 
-AUTHOR = "Hsi Liang"
-COMPANY = "https://github.com/hsiliang"
+AUTHOR = "一隻叫獸"
+COMPANY = "獅業中..."
 TOOL_COMMENT_AUTHOR = "檢測提示"   # 待修版註解的作者；重建時會被整批移除
 
 

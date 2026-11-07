@@ -36,7 +36,7 @@ def _post(url, data=b""):
 
 def test_full_flow(server, dirty_docx):
     page = urllib.request.urlopen(server + "/").read().decode()
-    assert "Watermark Remover" in page and "輔大醫院" in page and "本機自用" not in page and "只在這台電腦" not in page
+    assert "Watermark Remover" in page and "斧大醫院" in page and "本機自用" not in page and "只在這台電腦" not in page
     st, j = _post(server + "/api/upload?name=t.docx", open(dirty_docx, "rb").read())
     assert st == 200 and j["findings"]
     assert b"<html" in urllib.request.urlopen(server + "/report/" + j["id"]).read()
@@ -72,7 +72,7 @@ def test_custom_author_company_and_default(server, dirty_docx):
     import urllib.parse as up
     raw = open(dirty_docx, "rb").read()
     st, j = _post(server + "/api/upload?name=t.docx", raw)
-    assert j["defaults"] == {"author": "Hsi Liang", "company": "https://github.com/hsiliang"}
+    assert j["defaults"] == {"author": "一隻叫獸", "company": "獅業中..."}
     q = "&author=%s&company=%s" % (up.quote("王 & <小明>"), up.quote("某某大學"))
     st, c = _post(server + "/api/clean?id=%s&style=0&keep_hidden=0%s" % (j["id"], q))
     assert st == 200 and not [f for f in c["after"] if f["code"].endswith("not-owner")]
@@ -82,7 +82,7 @@ def test_custom_author_company_and_default(server, dirty_docx):
     # 留空 → 預設值
     st, c = _post(server + "/api/clean?id=%s&style=0&keep_hidden=0&author=&company=" % j["id"])
     core, app = _props(urllib.request.urlopen(server + "/download/" + j["id"]).read())
-    assert "Hsi Liang" in core and "https://github.com/hsiliang" in app
+    assert "一隻叫獸" in core and "獅業中..." in app
 
 
 def test_invalid_identity_rejected(server, dirty_docx):
