@@ -32,3 +32,14 @@ def test_finalize_writes_props(dirty_docx, tmp_path):
     cr = dt.datetime.fromisoformat(re.search(r"created[^>]*>([^<]+)Z<", core).group(1))
     mo = dt.datetime.fromisoformat(re.search(r"modified[^>]*>([^<]+)Z<", core).group(1))
     assert h > 34000 and rev == -(-h // 100) + 1 and (mo - cr).days > 300
+
+
+def test_factors_are_deterministic_and_web_parse():
+    from wmr.web import _pain
+    f = (1.0, 1.1, 1.2)
+    assert pain_to_props(7, factors=f) == pain_to_props(7, random.Random(1), factors=f)
+    assert _pain({"pain": ["7"], "rb": ["1.0"], "rc": ["1.1"], "rd": ["1.2"]}) == (7.0, 1.0, 1.1, 1.2)
+    assert _pain({"pain": ["7"]}) == 7.0 and _pain({}) is None
+    import pytest
+    with pytest.raises(ValueError):
+        _pain({"pain": ["7"], "rb": ["5"], "rc": ["1"], "rd": ["1"]})

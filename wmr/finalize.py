@@ -23,7 +23,7 @@ def finalize_props(path: str, author: str = AUTHOR, company: str = COMPANY, pain
         items = [(i, z.read(i.filename)) for i in z.infolist()]
     now_dt = _dt.datetime.utcnow().replace(microsecond=0)
     now = now_dt.isoformat() + "Z"
-    pm = pain_to_props(pain) if pain is not None else None
+    pm = (pain_to_props(pain[0], factors=pain[1:]) if isinstance(pain, tuple) else pain_to_props(pain)) if pain is not None else None
     created = (now_dt - _dt.timedelta(minutes=pm["a"])).isoformat() + "Z" if pm else None
     out = []
     for info, data in items:

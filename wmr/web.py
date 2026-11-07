@@ -101,11 +101,21 @@ def _cats(rv) -> list:
 
 
 def _pain(q):
+    """疼痛（認捐）值；前端若同時帶 rb／rc／rd（已抽好的亂數因子）就一併回傳，讓最終檔與畫面顯示的時數一致。"""
     v = q.get("pain", [""])[0]
+    if v == "":
+        return None
     try:
-        return float(v) if v != "" else None
+        pain = float(v)
+        rb, rc, rd = (q.get(k, [""])[0] for k in ("rb", "rc", "rd"))
+        if rb == rc == rd == "":
+            return pain
+        f = (float(rb), float(rc), float(rd))
     except ValueError:
         raise ValueError("認捐額度不合法")
+    if not (0.9 <= f[0] <= 1.1 and 0.7 <= f[1] <= 1.5 and 0.9 <= f[2] <= 1.5):
+        raise ValueError("認捐額度不合法")
+    return (pain,) + f
 
 
 def do_clean(jid: str, style: bool, keep_hidden: bool, author: str = "", company: str = "", pain=None) -> dict:

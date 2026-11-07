@@ -325,8 +325,7 @@ th{background:#f3eedf}
      <label class="opt"><input type="checkbox" id="oKeep"><span>保留隱藏文字<small>預設會刪除隱藏文字</small></span></label>
      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><label class="fld">作者／最後修改者<input type="text" id="oAuthor" maxlength="100" autocomplete="off"></label>
      <label class="fld">公司<input type="text" id="oCompany" maxlength="100" autocomplete="off"></label></div>
-     <label class="fld">斧大管你學院強制認捐：<b id="oPainV">0</b> / 10<input type="range" id="oPain" min="0" max="10" step="1" value="0" oninput="$('oPainV').textContent=this.value"></label>
-     <p class="mut" style="margin:4px 0 0;font-size:14px">認捐越多，文件的「建立時間」越久以前、編輯總時間與修訂版編號越高。</p>
+     <label class="fld">斧大管你學院強制認捐：<b id="oPainV">0</b> / 10　<span style="color:#2a5d8f">假裝編輯時長 <b id="oHours">0.5</b> 小時</span><input type="range" id="oPain" min="0" max="10" step="1" value="0"></label>
      <p class="mut" style="margin:4px 0 0;font-size:14px">作者、公司留空用預設值。設定會記在這個瀏覽器，下次自動帶入。</p>
      <label class="agree"><input type="checkbox" id="oAgree"><span>我已了解上述說明，同意接受手術</span></label>
      <div class="sigline">立同意書人：<span id="sigName">　　　　</span></div>
@@ -855,14 +854,19 @@ $('ctNext').onclick=()=>{if(S.step===2)go(3)};
 
 /* ============ S3 手術同意書 ============ */
 const PREF_KEY='wmr.prefs.v1';
+function newRnd(){return{b:.9+Math.random()*.2,c:.7+Math.random()*.8,d:.9+Math.random()*.6}}
+function painH(pain,r){const p=Math.min(Math.max(+pain,0),10)/10,amax=525600*r.b,amin=30*r.c,hmin=30*r.d,a=amin*Math.pow(amax/amin,p);
+ let h=hmin+(35000-hmin)*(1-Math.exp(-a/120000));h=Math.min(h,a);return Math.max(1,Math.min(Math.floor(h+.5),34999))}
+function showPain(){const v=$('oPain').value;$('oPainV').textContent=v;$('oHours').textContent=(painH(v,S.rnd)/60).toFixed(1)}
 function loadPrefs(){try{const P=JSON.parse(localStorage.getItem(PREF_KEY)||'{}')||{};
  if(P.author==='Hsi Liang')delete P.author;if(P.company==='https://github.com/hsiliang')delete P.company;return P}catch(e){return{}}}
-function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify({style:S.style,keep:S.keep,author:S.author,company:S.company,pain:S.pain}))}catch(e){}}
-function applyPrefs(def){const P=loadPrefs();$('oStyle').checked=!!P.style;$('oKeep').checked=!!P.keep;$('oAuthor').value=P.author||def?.author||'';$('oCompany').value=P.company||def?.company||'';$('oPain').value=P.pain??0;$('oPainV').textContent=$('oPain').value;$('oAgree').checked=false;$('order').disabled=true}
+function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify({style:S.style,keep:S.keep,author:S.author,company:S.company,pain:S.pain,rnd:S.rnd}))}catch(e){}}
+function applyPrefs(def){const P=loadPrefs();$('oStyle').checked=!!P.style;$('oKeep').checked=!!P.keep;$('oAuthor').value=P.author||def?.author||'';$('oCompany').value=P.company||def?.company||'';S.rnd=newRnd();$('oPain').value=P.pain??0;showPain();$('oAgree').checked=false;$('order').disabled=true}
 function enter3(){$('sigName').textContent=(S.info&&S.info.name?S.info.name.replace(/\.docx$/i,''):'')||'　　　　';$('order').disabled=!$('oAgree').checked}
 $('oAgree').onchange=()=>{if(S.step===3)$('order').disabled=!$('oAgree').checked};
+$('oPain').oninput=showPain;
 $('order').onclick=()=>{if(S.step!==3||!$('oAgree').checked)return;S.style=$('oStyle').checked;S.keep=$('oKeep').checked;S.author=$('oAuthor').value.trim();S.company=$('oCompany').value.trim();S.pain=$('oPain').value;savePrefs();$('order').disabled=true;go(4)};
-const qs=()=>`id=${enc(S.jid||'')}&style=${S.style?1:0}&keep_hidden=${S.keep?1:0}&author=${enc(S.author)}&company=${enc(S.company)}&pain=${enc(S.pain??'')}`;
+const qs=()=>`id=${enc(S.jid||'')}&style=${S.style?1:0}&keep_hidden=${S.keep?1:0}&author=${enc(S.author)}&company=${enc(S.company)}&pain=${enc(S.pain??'')}${S.rnd?`&rb=${S.rnd.b}&rc=${S.rnd.c}&rd=${S.rnd.d}`:''}`;
 
 /* ============ S4 治療 ============ */
 function reset4(){const sc=$('sc4');sc.dataset.st='idle';sc.classList.remove('paused');showSet('sc4',S.risk+'-idle');$('opLamp').className='oplamp';$('opLamp').textContent='治療中';$('chartSt').textContent='準備治療…';$('chartSt').className='mut';
@@ -915,7 +919,7 @@ function render6(){$('s6Need').hidden=S.skip;$('s6Skip').hidden=!S.skip;$('hit6'
  else if(S.file6)posState('ready','應付 NT$ 0','（全民健保）請按「確認」');
  else posState('sleep','請先提交待修版','確認鍵暫停服務')}
 function enter6(){reset6();$('s6Pref').hidden=!S.direct;$('toSkip').hidden=!!S.direct;
- if(S.direct){const P=loadPrefs();$('pStyle').checked=!!P.style;$('pKeep').checked=!!P.keep;$('pAuthor').value=P.author||'';$('pCompany').value=P.company||'';S.pain=P.pain}}
+ if(S.direct){const P=loadPrefs();$('pStyle').checked=!!P.style;$('pKeep').checked=!!P.keep;$('pAuthor').value=P.author||'';$('pCompany').value=P.company||'';S.pain=P.pain;S.rnd=P.rnd||newRnd()}}
 /* 敲玻璃：驚醒職員 */
 const KN={1:{say:'clerkSay',pos:'left:1010px;top:340px'},6:{say:'clerkSay6',pos:'left:1050px;top:520px'},7:{say:'clerkSay7',pos:'left:930px;top:560px'}};
 let fat=0;
